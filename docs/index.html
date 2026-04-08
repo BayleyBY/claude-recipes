@@ -1,0 +1,2602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recipe Book</title>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sidebar-w: 260px;
+  --detail-w: 500px;
+  --accent: #c97d47;
+  --sidebar-bg: #1e1e1e;
+  --sidebar-text: #d0ccc7;
+  --sidebar-muted: #777;
+  --bg: #f8f6f3;
+  --card-bg: #ffffff;
+  --border: #e4e0db;
+  --text: #1a1a1a;
+  --muted: #666;
+  --radius: 8px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid #2e2e2e;
+}
+
+.book-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+
+.book-subtitle {
+  font-size: 0.72rem;
+  color: var(--sidebar-muted);
+  margin-top: 0.2rem;
+}
+
+/* Search */
+.search-wrap {
+  position: relative;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #2e2e2e;
+}
+
+#search {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  border: 1px solid #3a3a3a;
+  border-radius: var(--radius);
+  background: #282828;
+  color: #fff;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#search::placeholder { color: #555; }
+#search:focus { border-color: var(--accent); }
+
+.search-icon {
+  position: absolute;
+  left: 1.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.search-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Category nav */
+.category-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.4rem 0;
+}
+
+.cat-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1.25rem;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+
+.cat-link:hover {
+  background: #282828;
+  color: #fff;
+}
+
+.cat-link.active {
+  background: #282828;
+  color: #fff;
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.cat-count {
+  font-size: 0.72rem;
+  background: #2e2e2e;
+  color: var(--sidebar-muted);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+  min-width: 1.6rem;
+  text-align: center;
+  transition: background 0.1s, color 0.1s;
+}
+
+.cat-link.active .cat-count {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem 2rem;
+  min-width: 0;
+}
+
+.main-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.visible-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ── CARD GRID ────────────────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1rem 1.1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent);
+}
+
+.card-cat-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.card-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.card.hidden { display: none; }
+
+.no-results {
+  padding: 3rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ── OVERLAY ──────────────────────────────────────────────── */
+.detail-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.detail-overlay.open {
+  display: block;
+  opacity: 1;
+}
+
+/* ── DETAIL PANEL ────────────────────────────────────────── */
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: var(--detail-w);
+  max-width: 100vw;
+  background: #fff;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.detail-panel.open { transform: translateX(0); }
+
+.detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.close-btn:hover { background: #f0efed; color: var(--text); }
+
+.print-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--muted);
+  transition: border-color 0.12s, color 0.12s;
+}
+.print-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem 2.5rem;
+}
+
+/* ── RECIPE TYPOGRAPHY (in detail panel) ─────────────────── */
+.detail-body h1 {
+  font-family: Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.detail-body .meta {
+  margin-bottom: 1.4rem;
+}
+.detail-body .meta p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0.15rem 0;
+}
+.detail-body .meta strong { color: #555; }
+
+.detail-body h2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+  margin-top: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.detail-body ul,
+.detail-body ol {
+  padding-left: 1.4rem;
+}
+
+.detail-body li {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin-bottom: 0.3rem;
+}
+
+.detail-body ol li { margin-bottom: 0.65rem; }
+
+.detail-body p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0.35rem 0;
+}
+
+/* ── PRINT ────────────────────────────────────────────────── */
+@media print {
+  .sidebar,
+  .main,
+  .detail-toolbar,
+  .detail-overlay { display: none !important; }
+
+  .detail-panel {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .detail-body { overflow: visible !important; padding: 0 !important; }
+
+  body { font-size: 11pt; }
+  .detail-body h1 { font-size: 18pt; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="book-title">Recipe Book</div>
+      <div class="book-subtitle">Collected recipes — April 2026</div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg viewBox="0 0 16 16">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10.5" y1="10.5" x2="14" y2="14"/>
+        </svg>
+      </span>
+      <input type="search" id="search" placeholder="Search recipes &amp; ingredients…" autocomplete="off" spellcheck="false">
+    </div>
+
+    <nav class="category-nav" id="category-nav">
+      <a href="#" class="cat-link active" data-cat="all">
+        <span class="cat-name">All Recipes</span>
+        <span class="cat-count" id="count-all">49</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Breakfast">
+        <span class="cat-name">Breakfast</span>
+        <span class="cat-count">1</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Appetizers">
+        <span class="cat-name">Appetizers</span>
+        <span class="cat-count">8</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Soups">
+        <span class="cat-name">Soups</span>
+        <span class="cat-count">4</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Salads">
+        <span class="cat-name">Salads</span>
+        <span class="cat-count">4</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Sides">
+        <span class="cat-name">Sides</span>
+        <span class="cat-count">1</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Mains">
+        <span class="cat-name">Mains</span>
+        <span class="cat-count">14</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Breads">
+        <span class="cat-name">Breads</span>
+        <span class="cat-count">13</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Sauces">
+        <span class="cat-name">Sauces</span>
+        <span class="cat-count">2</span>
+      </a>
+      
+      <a href="#" class="cat-link" data-cat="Desserts">
+        <span class="cat-name">Desserts</span>
+        <span class="cat-count">2</span>
+      </a>
+      
+    </nav>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+    <div class="main-header">
+      <h2 class="section-title" id="section-title">All Recipes</h2>
+      <span class="visible-count" id="visible-count">49 recipes</span>
+    </div>
+
+    <div class="card-grid" id="card-grid">
+      
+      
+      <div class="card"
+           data-id="21"
+           data-category="Breakfast"
+           data-search="sous vide egg bites source: email date saved: 2024-12-30 ingredients - 4 slices bacon, diced - 6 large eggs - 1 1/4 cups cottage cheese (4% milkfat) - 1 1/4 cups shredded gruyere (or a blend of gruyere and cheddar or monterey jack) - 2 tablespoons cornstarch - heaping 1/4 teaspoon salt - 1/8 teaspoon freshly ground black pepper - 1/2 teaspoon hot sauce, such as tabasco instructions 1. blend eggs, cottage cheese, shredded gruyere, cornstarch, salt, pepper, and hot sauce together until smooth. 2. divide diced bacon among silicone egg bite molds or small mason jars. pour egg mixture over the bacon. 3. cover molds/jars and cook sous vide at 175°f for one hour. 4. remove from water bath and crisp the outside before serving. notes none.">
+        <span class="card-cat-badge">Breakfast</span>
+        <h3 class="card-title">Sous Vide Egg Bites</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="0"
+           data-category="Appetizers"
+           data-search="berbere spice chicken wings source: date saved: 2020-08-11 ingredients berbere spice mix - 3 tablespoons paprika - 1 tablespoon salt - 1 tablespoon cayenne - 1 teaspoon ground fenugreek - 1 teaspoon ground ginger - 1 teaspoon onion powder - 1/2 teaspoon ground cardamom - 1/2 teaspoon ground nutmeg - 1/2 teaspoon garlic powder - 1/4 teaspoon ground cloves - 1/4 teaspoon ground cinnamon - 1/4 teaspoon allspice wings - 12 chicken drumettes - 1/2 cup flour - 1 tablespoon baking powder - 1 tablespoon cornstarch - 2 tablespoons unsalted butter instructions 1. in a medium bowl, combine the paprika, salt, cayenne, fenugreek, ginger, onion powder, cardamom, nutmeg, garlic powder, cloves, cinnamon, and allspice. mix well. 2. reserve two tablespoons of spice mix and set aside. 3. add the chicken drumettes to the bowl with the remaining spice mixture and toss to coat evenly. marinate in the fridge at least 30 minutes, up to overnight. 4. in a small bowl, combine the flour, baking powder, and cornstarch. sprinkle the flour mixture over the marinated chicken. toss until well-coated. 5. preheat the oven to 425 degrees f (220 degrees c). 6. place the chicken on a wire rack set over a parchment paper-lined baking sheet. bake for 30-40 minutes or until chicken is slightly browned. 7. in a small saucepan, melt the butter. once melted, add the reserved 2 tablespoons spice mix and stir to combine. 8. drizzle the spice butter mixture over the drumettes and serve. notes yields 4 servings. total time about 85 minutes (not including marinating time).">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Berbere Spice Chicken Wings</h3>
+      </div>
+      
+      <div class="card"
+           data-id="1"
+           data-category="Appetizers"
+           data-search="blooming onion and dipping sauce source: date saved: 2012-09-02 ingredients dipping sauce - 1/2 cup mayonnaise - 2 tablespoons cream-style horseradish sauce - 1 tablespoon ketchup - 1/3 teaspoon paprika - 1/3 teaspoon cayenne pepper - 1/4 teaspoon salt - 1/8 teaspoon dried oregano - 1 pinch ground black pepper coating - 1 cup milk - 1 egg - 1 cup all-purpose flour - 1 1/2 teaspoons salt - 1 1/2 teaspoons cayenne pepper - 1 teaspoon paprika - 1/2 teaspoon ground black pepper - 1/3 teaspoon dried oregano - 1/8 teaspoon dried thyme - 1/8 teaspoon ground cumin other - 1 large sweet onion - 3/4 cup vegetable oil for frying instructions 1. make sauce: mix mayonnaise, horseradish, ketchup, paprika, cayenne, salt, oregano, and black pepper together in a medium bowl until well combined. cover and store in the refrigerator until needed. 2. make coating: beat milk and egg together in a medium bowl until well combined. 3. mix flour, salt, cayenne pepper, paprika, black pepper, oregano, thyme, and cumin together in a separate bowl. set both bowls aside. 4. prepare onion: slice 1 inch off of the top and bottom of onion and remove the papery skin. 5. remove a 1-inch diameter core from middle of onion, leaving the very bottom of the root end intact. 6. use a large, sharp knife to slice down center of onion about 3/4 of the way down; turn onion 90 degrees and slice again. 7. keep slicing each section in half until you have 16 sections, being careful not to cut through bottom of onion. 8. spread &#34;petals&#34; apart. to help keep them separate, you could plunge onion into boiling water for 1 minute and then into cold water to stop the cooking. 9. dip onion into milk mixture and then coat well with seasoned flour mixture, separating the petals and sprinkling the flour mixture between them. 10. dip onion back into milk mixture, then coat with flour mixture again to ensure all pieces are well coated. 11. heat oil in a deep fryer or deep pot to 350 degrees f (175 degrees c). make sure you use enough oil to completely cover the onion when it fries. lower onion, cut-side up, into the hot oil and fry until golden brown, about 10 minutes. 12. drain on a rack or on paper towels. 13. open center of onion wide enough to fit the bowl of dipping sauce and serve. notes yields 6 servings. total time about 45 minutes.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Blooming Onion and Dipping Sauce</h3>
+      </div>
+      
+      <div class="card"
+           data-id="2"
+           data-category="Appetizers"
+           data-search="dot&#39;s pretzels seasoning source: email date saved: 2025-12-30 ingredients seasoning mix - 1/2 teaspoon lemon pepper - 1 teaspoon kosher salt - 1 oz package buttermilk ranch dressing mix (or 2 tablespoons) - 1/2 teaspoon dried dill weed - 1 teaspoon garlic powder - 1/4 teaspoon cayenne pepper other - 2 bags butter braid pretzels (each 10 oz bags) - 1/2 cup canola oil or unsalted butter instructions 1. combine all seasoning mix ingredients in a bowl and stir to blend. 2. toss pretzels with canola oil or melted butter until evenly coated. 3. sprinkle seasoning mix over pretzels and toss until evenly distributed.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Dot's Pretzels Seasoning</h3>
+      </div>
+      
+      <div class="card"
+           data-id="3"
+           data-category="Appetizers"
+           data-search="honey bbq wings (baked) source: email date saved: 2016-04-16 ingredients - 1 cup flour - 1 teaspoon chili powder - 1 teaspoon kosher salt - 1 teaspoon freshly ground black pepper - 1 teaspoon paprika - 1 teaspoon garlic powder - 20 chicken wings or drumettes - 1 cup bbq sauce - 1/2 cup honey instructions 1. preheat oven to 425 degrees f. 2. in a bowl, combine flour, chili powder, salt, pepper, paprika, and garlic powder. coat the wings in the flour evenly, shaking off any excess. 3. place the floured wings on a parchment paper-lined baking sheet and spread them out in a single layer. bake for 45 minutes, flipping halfway, until skin is crispy and golden brown. 4. preheat oven to 500 degrees f. 5. in a separate bowl, combine the bbq sauce and the honey. stir the cooked wings in the sauce and coat them evenly. 6. place the coated wings back onto the baking sheet and spread them in a single layer. bake for 8 to 10 minutes until sauce is bubbly and caramelized. 7. cool, then serve.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Honey BBQ Wings (Baked)</h3>
+      </div>
+      
+      <div class="card"
+           data-id="4"
+           data-category="Appetizers"
+           data-search="hummus recipe varieties source: image (ocr) date saved: 2014-10-01 classic hummus - 1 can chickpeas - 1/3 cup tahini - 2 tablespoons olive oil - 2 tablespoons lemon juice - 1 clove garlic edamame hummus - 1 3/4 cups cooked shelled edamame - 1/3 cup tahini - 2 tablespoons olive oil - 2 tablespoons lemon juice - 1 clove garlic greek hummus - 1 can chickpeas - 1/2 cup crumbled feta cheese - 1 cup baby spinach - 2 tablespoons lemon juice - 1/8 teaspoon cinnamon green herb hummus - 1 can chickpeas - 1/2 cup basil leaves - 1/2 cup parsley leaves - 1/4 cup fresh tarragon - 2 tablespoons olive oil guacamole hummus - 1 can chickpeas - 1 ripe avocado - 1 jalapeno - 1/4 cup cilantro leaves - 2 tablespoons lime juice italian hummus - 1 can cannellini beans - 1/4 cup sundried tomatoes - 2 tablespoons olive oil - 2 tablespoons lemon juice - 1 teaspoon dried oregano cheater&#39;s classic hummus (peanut butter) - 1 can chickpeas - 1/3 cup creamy peanut butter - 2 tablespoons olive oil - 2 tablespoons lemon juice - 1 clove garlic pesto hummus - 1 can chickpeas - 1/3 cup tahini - 2 tablespoons prepared pesto - 2 tablespoons lemon juice - 1 tablespoon grated parmesan cheese ranch hummus - 1 can chickpeas - 1/3 cup greek yogurt - 1 teaspoon dried parsley - 1/2 teaspoon garlic salt - 1 teaspoon dried dill southwestern hummus - 1 can black beans - 1 chipotle pepper - 2 tablespoons lime juice - 1/4 cup cilantro leaves - 1 teaspoon cumin tapenade hummus - 1 can chickpeas - 1/3 cup pitted black olives - 1 chopped roasted red pepper - 2 tablespoons lemon juice - 1/4 cup parsley leaves tunisian hummus - 1 can chickpeas - 1/3 cup tahini - 2 tablespoons harissa paste - 2 tablespoons lemon juice - 1/4 teaspoon lemon zest instructions 1. combine all ingredients for your chosen variety in a food processor. 2. blend until smooth, scraping down the sides as needed. 3. season with salt to taste. notes each variety follows the same basic method: blend all ingredients in a food processor until smooth. adjust seasoning to taste.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Hummus Recipe Varieties</h3>
+      </div>
+      
+      <div class="card"
+           data-id="6"
+           data-category="Appetizers"
+           data-search="spinach artichoke dip with green chiles source: email date saved: 2026-01-07 ingredients - 1 (10 oz) package frozen spinach, thawed and well-drained (or about 3 cups fresh spinach, cooked and chopped) - 1 (14 oz) can artichoke hearts, drained and roughly chopped - 8 oz cream cheese, softened - 1/2 cup sour cream (or mayonnaise if you prefer) - 1 cup shredded mozzarella cheese - 1/2 cup grated parmesan cheese - 2-3 cloves garlic, minced - 1/2 teaspoon salt (adjust to taste) - 1/4 teaspoon black pepper - 1/4 to 1/2 cup chopped green chiles (depending on your spice preference) instructions 1. preheat your oven to 375 degrees f (190 degrees c). 2. in a large bowl, combine the softened cream cheese, sour cream (or mayo), minced garlic, salt, and pepper until smooth. 3. stir in the chopped spinach, artichoke hearts, green chiles, and both cheeses (mozzarella and parmesan). mix everything until evenly combined. 4. transfer the mixture to an oven-safe baking dish. spread it out evenly. if you like, sprinkle a little extra cheese on top for a golden finish. 5. bake for about 20-25 minutes or until the dip is hot and bubbly and slightly golden on top. 6. serve warm with your favorite dippers -- chips, bread, or veggies.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Spinach Artichoke Dip with Green Chiles</h3>
+      </div>
+      
+      <div class="card"
+           data-id="7"
+           data-category="Appetizers"
+           data-search="texas caviar with avocado source: allrecipes.com date saved: 2014-09-05 ingredients - 1 (15.5 ounce) can black-eyed peas, drained and rinsed - 1 tomato, chopped - 1/2 medium sweet onion, chopped - 1/4 cup chopped jalapeno peppers - 4 fluid ounces italian dressing - cayenne pepper to taste - 1 avocado, peeled, pitted, and chopped instructions 1. in a large bowl, mix black-eyed peas, tomatoes, sweet onion, jalapeno peppers, italian dressing, and cayenne pepper. 2. stir in the avocados just before serving. notes prep 15 minutes. ready in 15 minutes. makes 16 servings.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">Texas Caviar with Avocado</h3>
+      </div>
+      
+      <div class="card"
+           data-id="5"
+           data-category="Appetizers"
+           data-search="the best oven-fried buffalo wings source: date saved: 2017-02-03 ingredients - 1 to 4 pounds (450g to 1.7kg) chicken wings, cut into drumettes and flats - 1 teaspoon (5g) baking powder per pound of chicken wings - 1 teaspoon (5g) kosher salt per pound of chicken wings - 2 tablespoons (1 ounce; 25g) unsalted butter per pound of chicken wings - 2 tablespoons (1 ounce; 30ml) frank&#39;s redhot sauce per pound of chicken wings - blue cheese dressing, for serving - celery sticks, for serving instructions 1. line a rimmed baking sheet with aluminum foil and set a wire rack inside. carefully dry chicken wings with paper towels. 2. in a large bowl, combine wings with baking powder and salt and toss until thoroughly and evenly coated. place on rack, leaving a slight space between each wing. 3. place baking sheet with wings in refrigerator and allow to rest, uncovered, at least 8 hours and up to 24 hours. 4. adjust oven rack to upper-middle position and preheat oven to 450 degrees f (230 degrees c). 5. add chicken wings and cook for 20 minutes. flip wings and continue to cook until crisp and golden brown, 15 to 30 minutes longer, flipping a few more times towards the end. 6. meanwhile, combine butter and hot sauce in a small saucepan and cook over medium heat, whisking until combined. 7. transfer wings to a large bowl, add sauce, and toss to thoroughly coat. 8. serve wings immediately with blue cheese dressing and celery sticks. notes yields 2 servings. total time about 20 hours (including overnight refrigeration). the baking powder and overnight rest are the key to crispy skin without frying.">
+        <span class="card-cat-badge">Appetizers</span>
+        <h3 class="card-title">The Best Oven-Fried Buffalo Wings</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="45"
+           data-category="Soups"
+           data-search="gumbo source: email date saved: 2026-02-01 ingredients cajun spice blend: - 2-3 tbsp smoked paprika - 2 tbsp garlic powder - 1 tbsp onion powder - 1 tbsp black pepper - 1 tsp to 1 tbsp cayenne pepper (adjust based on heat tolerance) - 1 tbsp dried oregano - 1 tbsp dried thyme - 1 tsp red pepper flakes proteins: - 1 lb andouille sausage, sliced - 1.5 lbs large shrimp, peeled and deveined the &#34;holy trinity&#34;: - 1 large onion, diced - 2 bell peppers, diced - 3-4 stalks celery, diced the roux: - 1 cup vegetable oil (or lard) - 1 cup all-purpose flour liquid and flavor: - 6-8 cups seafood or chicken stock - 4 cloves garlic - 2 bay leaves - cajun/creole seasoning, thyme, cayenne, salt, and black pepper the finish: - green onions - fresh parsley - cooked white rice instructions 1. brown the sausage: in a heavy dutch oven, brown your sliced andouille over medium heat. this renders the fat and builds a flavor base. remove the sausage and set it aside, leaving the fat in the pot. 2. the roux (the most important part): add your oil to the pot, then whisk in the flour. lower the heat and stir constantly . you are looking for a color that matches an old copper penny or dark chocolate. this can take 20-30 minutes. if you see black specks, it&#39;s burnt -- throw it out and start over. 3. saute the trinity: once the roux is dark, carefully stir in your onion, peppers, and celery. the moisture from the veggies will stop the roux from cooking further. cook until softened (about 5 minutes), then add the garlic. 4. simmer: slowly whisk in your stock to avoid lumps. add the browned sausage, bay leaves, and seasonings. bring to a boil, then reduce to a low simmer. let it cook for at least 45 minutes to 1 hour. this develops the depth gumbo is known for. 5. the seafood finish: about 5-10 minutes before you&#39;re ready to serve, drop in the shrimp. they only need a few minutes to turn pink and opaque. overcooking them makes them rubbery! 6. serve: ladle it over a scoop of white rice. top with plenty of green onions and parsley. notes none.">
+        <span class="card-cat-badge">Soups</span>
+        <h3 class="card-title">Gumbo</h3>
+      </div>
+      
+      <div class="card"
+           data-id="46"
+           data-category="Soups"
+           data-search="korean chicken porridge (dak juk) source: date saved: 2012-09-11 ingredients - 4-5 pieces (1 lb) boneless chicken breasts - 5-6 garlic cloves, minced - 1/2 zucchini, cut into small cubes - 1 carrot, cut into small cubes - 8-9 cups of water - 3 cups jjapsahl (korean sweet rice) - 1 tbsp salt - soy sauce to taste - sliced scallions (garnish) - sesame oil (for taste and garnish) instructions 1. prepare all ingredients as listed above. 2. cook according to the foodista recipe directions. notes original email was a shopping list note with ingredients only. no cooking instructions were included in the source.">
+        <span class="card-cat-badge">Soups</span>
+        <h3 class="card-title">Korean Chicken Porridge (Dak Juk)</h3>
+      </div>
+      
+      <div class="card"
+           data-id="47"
+           data-category="Soups"
+           data-search="vietnamese pho source: image (ocr) date saved: 2011-11-15 ingredients broth: - 2-3 lbs beef marrow bones - 1.5-2 lbs brisket - 1 onion - fist-sized piece of ginger root - 1 head garlic - 2 inches yellow rock sugar - 1 tbsp vietnamese fish sauce - 1 tbsp salt spices (for mesh ball): - 2 cinnamon sticks - 1-4 tbsp coriander - 1-4 tbsp fennel seed - 5 whole star anise - 5 cardamom pods - 10 whole cloves noodles and meat: - 1 lb oriental rice noodles - 1 package beef tendon balls - 1 package eye of round, thinly sliced, served rare garnish: - 1/2 onion - 1 bag bean sprouts - 1 bunch green onions - 1 bunch cilantro - jalapeno - lime - hoisin - sriracha - thai basil (not regular basil) instructions 1. broil marrow bones and brisket covered in oil in the oven on the highest setting. add fish sauce, rock sugar, and salt to the pot. 2. place star anise, cardamom, coriander, fennel seed, cloves, and cinnamon sticks into a mesh spice ball. add to the broth. occasionally stir gently. 3. let meat rest once cool enough to handle. place in the freezer for 30 minutes -- freezing it a bit helps so you can slice it super thin. cut off any fat if you prefer. 4. let the broth simmer. the fat will rise up and might even be thick enough to rest a spoon on it. 5. cook rice noodles according to package directions. 6. place noodles in bowls, top with thinly sliced raw eye of round and beef tendon balls. pour hot broth over (the hot broth will cook the rare meat). 7. add garnishes: bean sprouts, green onions, cilantro, jalapeno, lime, hoisin, and sriracha to taste. notes extracted via ocr from an infographic-style image. recommend buying spices in bulk online. remaining broth can be frozen in flat containers for another time.">
+        <span class="card-cat-badge">Soups</span>
+        <h3 class="card-title">Vietnamese Pho</h3>
+      </div>
+      
+      <div class="card"
+           data-id="48"
+           data-category="Soups"
+           data-search="white chicken lasagna soup source: date saved: 2017-01-03 ingredients - 1 pound boneless, skinless chicken breasts, cubed, cooked - 10 lasagna noodles, broken into small pieces - 7 cups low-sodium chicken broth, divided - 1 (15 oz.) can cannellini beans, rinsed and drained - 1 (10 oz.) package frozen baby spinach, thawed - 1 1/2 cups heavy cream - 1/4 cup all-purpose flour - 1/4 cup cornstarch - 4 cloves garlic, minced - 2 carrots, peeled and finely chopped - 2 bay leaves - 1 medium yellow onion, finely chopped - 2 tablespoons olive oil, divided - 1 tablespoon italian seasoning - kosher salt and freshly ground pepper, to taste - parmesan cheese, grated, to taste - ricotta, optional instructions 1. heat 2 tablespoons olive oil in a large stockpot or dutch oven over medium-high heat and saute onion and carrot until softened, 10-12 minutes. 2. add garlic and cook for 1 minute, or until fragrant, then sprinkle in flour and stir together for 2-3 minutes, or until flour has a chance to cook. mixture will be thick. 3. slowly pour in 6 cups chicken broth, saving the last 1 cup to mix the cornstarch into. pour cornstarch mixture in as well, stirring everything to combine. 4. add chicken, beans, lasagna noodles, bay leaves and italian seasoning to soup, then season generously with salt and pepper. 5. bring mixture up to a boil, then reduce heat to low and let simmer for 20 minutes, or until noodles are al dente. 6. remove and discard bay leaves, then stir thawed spinach into the soup. pour in heavy cream and cook for another 5-10 minutes, or until warmed through. 7. add grated parmesan, then transfer to serving bowls and enjoy! notes serves 6-8. total time approximately 40 minutes.">
+        <span class="card-cat-badge">Soups</span>
+        <h3 class="card-title">White Chicken Lasagna Soup</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="38"
+           data-category="Salads"
+           data-search="chicken salad source: email date saved: 2013-02-01 ingredients - 2 roasted chickens (breast meat only) - 1/2 cup golden raisins (options: red currants, regular raisins) - 1 cup roasted pecans (pop in oven for 5 mins, break apart) - 1/4 cup onion, red (options: green onions or any you like) - 1/2 cup miracle whip (add more to your texture preference) - 1 tablespoon mustard (adjust to taste) - seasoning salt to taste instructions 1. shred or chop the breast meat from 2 roasted chickens. 2. roast pecans in the oven for 5 minutes, then break apart. 3. combine chicken, golden raisins, roasted pecans, and chopped onion in a large bowl. 4. add miracle whip starting with 1/2 cup and mustard starting with 1 tablespoon. mix well and adjust amounts to your preference. 5. season with seasoning salt to taste. 6. serve on any bread you prefer, or with crackers. notes you can change nuts and fruits to make different kinds of chicken salads. optional additions: swiss or white american cheese, lettuce, and a tomato slice.">
+        <span class="card-cat-badge">Salads</span>
+        <h3 class="card-title">Chicken Salad</h3>
+      </div>
+      
+      <div class="card"
+           data-id="39"
+           data-category="Salads"
+           data-search="coleslaw source: email date saved: 2017-01-20 ingredients for the dressing: - 1 cup apple cider vinegar - 1 cup sugar - 3 tablespoons extra-virgin olive oil - 1 teaspoon finely minced garlic (about 1 medium clove) - 1 teaspoon freshly ground black pepper - 1 teaspoon celery seeds for the slaw: - 1 large head green cabbage (about 3 1/2 pounds), finely shredded on a mandoline or by hand - 1 large carrot, peeled and grated on the large holes of a box grater - 1 medium yellow onion, finely sliced on a mandoline or by hand - 2/3 cup sugar - 1/3 cup kosher salt instructions 1. for the dressing: whisk together vinegar, sugar, oil, garlic, black pepper, and celery seeds in a small bowl. 2. for the slaw: combine cabbage, carrot, and onion in a large bowl. sprinkle with sugar and salt and toss to combine. let stand five minutes, then transfer to a large colander and rinse thoroughly under cold running water. 3. transfer vegetables to a salad spinner and spin dry. alternatively, transfer to a large rimmed baking sheet lined with a triple layer of paper towels or a clean kitchen towel and blot mixture dry with more towels. return to large bowl. 4. pour dressing over vegetables and toss to coat. adjust seasoning to taste with salt, pepper, and/or sugar. notes none.">
+        <span class="card-cat-badge">Salads</span>
+        <h3 class="card-title">Coleslaw</h3>
+      </div>
+      
+      <div class="card"
+           data-id="40"
+           data-category="Salads"
+           data-search="quinoa shrimp salad source: email date saved: 2025-01-22 ingredients - quinoa - shrimp (cooked with butter, lemon, and ginger) - avocado - cucumber - tomato - cilantro - olive oil - soy sauce instructions 1. cook quinoa according to package directions and let cool. 2. cook shrimp with butter, lemon, and ginger. 3. dice avocado, cucumber, and tomato. 4. combine quinoa, shrimp, avocado, cucumber, tomato, and cilantro. 5. dress with olive oil and soy sauce. notes original email was a brief ingredient list only. instructions above are inferred from the ingredients. no quantities were specified.">
+        <span class="card-cat-badge">Salads</span>
+        <h3 class="card-title">Quinoa Shrimp Salad</h3>
+      </div>
+      
+      <div class="card"
+           data-id="41"
+           data-category="Salads"
+           data-search="red potato salad source: date saved: 2014-05-22 ingredients - 2 pounds clean, scrubbed new red potatoes - 6 large eggs - 1 pound bacon - 1 onion, finely chopped - 1 stalk celery, finely chopped - 2 cups mayonnaise - salt and pepper to taste instructions 1. bring a large pot of salted water to a boil. add potatoes and cook until tender but still firm, about 15 minutes. drain and allow to cool. 2. place eggs in a saucepan and cover with cold water. bring water to a boil and immediately remove from heat. cover and let eggs stand in hot water for 10 to 12 minutes. remove eggs from hot water; cool in ice water. peel, then chop into small, bite-sized pieces. 3. place bacon in a large skillet and cook over medium-high heat, turning occasionally, until evenly browned, about 10 minutes. drain bacon slices on paper towels, then crumble. 4. chop cooled potatoes, leaving skin on. add to a large bowl, along with eggs, bacon, onion, and celery. stir in mayonnaise, salt, and pepper. chill in the refrigerator for 1 hour before serving. notes serves 12. total time approximately 115 minutes.">
+        <span class="card-cat-badge">Salads</span>
+        <h3 class="card-title">Red Potato Salad</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="44"
+           data-category="Sides"
+           data-search="homemade vermicelli noodles source: email date saved: 2024-06-18 ingredients rice dough starter: - 2 cups rice flour - 7 cups water - 1 tbsp oil dry ingredients: - 4 cups rice flour (1 16oz bag) - 4 cups tapioca flour (1 16oz bag) - 1 tbsp xanthan gum - 2 tsp salt instructions rice dough starter: 1. in a pot, add 2 cups rice flour, 7 cups water, and 1 tbsp oil. 2. whisk together, then set on medium to high heat and cook. stir as you cook to prevent scorching and rice lumps. 3. stir until it becomes a nice thick but also slimy texture (until it comes to a boil and bubbles are popping up). set aside for 20 minutes to cool off. dry ingredients: 4. in a bowl, add 4 cups rice flour, 4 cups tapioca flour, xanthan gum, and salt. whisk all together. 5. after 20-30 minutes, once the rice starter has cooled down, add it to the dry ingredients. mix until the dry absorbs most of the wet, then switch to a hand mixer or any mixer of your choice. mix until the batter becomes nice and shiny. cooking setup: batter --- boiled water --- bowl of cold water --- another bowl of cold water --- strainer cooking the noodles: 6. scoop the batter into your noodle press. once the water boils, squeeze the batter into the water. (keep an eye on the water after you take out the noodles. the water will rise up if you keep it on high boil! keep it low until you do another batch, then put it back up to high for a boil.) 7. once the noodles rise to the surface, take a noodle strainer and scoop out the noodles. 8. rinse in the first bowl of cold water, and again in the second bowl. 9. grab small bundles of noodle at a time and put them in your strainer bowl. 10. keep repeating until you use up all your batter. notes none.">
+        <span class="card-cat-badge">Sides</span>
+        <h3 class="card-title">Homemade Vermicelli Noodles</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="37"
+           data-category="Mains"
+           data-search="3-ingredient stovetop mac and cheese source: date saved: 2017-01-20 ingredients - 6 ounces (170g) elbow macaroni - salt - 6 ounces (180ml) evaporated milk - 6 ounces (170g) grated mild or medium cheddar cheese, or any good melting cheese, such as fontina, gruyere, or jack instructions 1. place macaroni in a medium saucepan or skillet and add just enough cold water to cover. add a pinch of salt and bring to a boil over high heat, stirring frequently. continue to cook, stirring, until water has been almost completely absorbed and macaroni is just shy of al dente, about 6 minutes. 2. immediately add evaporated milk and bring to a boil. add cheese. reduce heat to low and cook, stirring continuously, until cheese is melted and liquid has reduced to a creamy sauce, about 2 minutes longer. season to taste with more salt and serve immediately. notes - yields 2 servings. total time: 15 minutes.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">3-Ingredient Stovetop Mac and Cheese</h3>
+      </div>
+      
+      <div class="card"
+           data-id="24"
+           data-category="Mains"
+           data-search="avocado pasta source: email date saved: 2016-04-11 ingredients - 1 avocado - juice of 1 lemon (reserve zest) - 1-2 cloves garlic - 1 handful basil - 2 green onions - 1/4 tsp each salt and pepper (more or less to taste) instructions 1. blend or process the avocado, lemon juice, garlic, basil, green onions, salt, and pepper into a sauce. 2. toss with cooked pasta and garnish with reserved lemon zest. notes - the original recipe listed only ingredients; instructions inferred from context.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Avocado Pasta</h3>
+      </div>
+      
+      <div class="card"
+           data-id="25"
+           data-category="Mains"
+           data-search="balsamic slow cooker roast beef source: email date saved: 2014-12-28 ingredients - 1 (3-4 pound) boneless roast beef (chuck or round roast) - 1 cup beef broth - 1/2 cup balsamic vinegar - 1 tablespoon worcestershire sauce - 1 tablespoon soy sauce - 1 tablespoon honey - 1/2 teaspoon red pepper flakes - 4 cloves garlic, chopped instructions 1. place all ingredients in slow cooker. 2. cook on low for 8-10 hours.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Balsamic Slow Cooker Roast Beef</h3>
+      </div>
+      
+      <div class="card"
+           data-id="26"
+           data-category="Mains"
+           data-search="cabernet-cherry filet mignon source: email date saved: 2014-10-01 ingredients - 4 (4 to 5 ounce) 1-inch thick filet mignon (beef tenderloin) - olive oil - 2 cloves garlic, minced - 1 1/2 cups cabernet sauvignon or burgundy wine - 3 tablespoons good-quality balsamic vinegar - 4 whole cloves - 8 whole peppercorns - 1 bay leaf, torn into small pieces - 1/2 pound fresh bing cherries, rinsed - coarse salt and freshly-ground black pepper to taste - 1 to 2 teaspoons granulated sugar (optional) instructions 1. bring steaks to room temperature. coat steaks lightly with olive oil. rub minced garlic evenly over the steak (press in with your hands); set aside until ready to cook. 2. do not salt your steaks before cooking. salt brings moisture to the surface and you will essentially steam the steak. salt after the steak is cooked to your liking, has rested, and just before serving. 3. in a large saucepan over medium-high heat, bring the wine and balsamic vinegar to a boil. tie the cloves, peppercorns, and bay leaf in a bundle with a small piece of cheesecloth. add the spice bundle to the wine mixture; continue boiling approximately 15 minutes or until mixture is reduced to 1/2 cup. 4. while the wine mixture is reducing, pit the cherries. cut the cherries into quarters and add to the wine mixture. cover and cook approximately 10 minutes or until the cherries are tender. season with salt and pepper. add the sugar to balance the flavors, if needed. remove the spice bundle from the sauce and discard. reduce heat to low to keep cabernet-cherry sauce warm until steaks are cooked. 5. using pan-searing or sear-roasting technique, cook your steak to your desired doneness. the steak is done when the internal temperature registers on an instant-read meat thermometer: - rare: 120 degrees f - medium rare: 125 degrees f - medium: 130 degrees f notes - yields 4 servings. prep time: 5 min. cook time: 15 min. - when buying steaks, buy the best grade of meat you can afford. look for steaks with fine texture and firm to the touch. the color should be a light cherry red, not deep red. also look for marbling, as the thin threads of fat running through the meat give wonderful flavor.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Cabernet-Cherry Filet Mignon</h3>
+      </div>
+      
+      <div class="card"
+           data-id="28"
+           data-category="Mains"
+           data-search="chicken and goat cheese pasta source: email date saved: 2023-01-07 ingredients - 8 oz pasta of your choice - 1 lb chicken breast, cut into bite-size pieces - 1 tbsp olive oil - 1 bell pepper, diced - 1 onion, diced - 8 oz mushrooms, sliced - 4 oz goat cheese, crumbled - 1 cup tomato-based pasta sauce (or cream-based sauce) instructions 1. cook the pasta according to the package instructions. drain and set aside. 2. heat the olive oil in a large pan over medium heat. add the chicken and cook until browned on all sides and cooked through. remove the chicken from the pan and set aside. 3. in the same pan, add the bell pepper, onion, and mushrooms. saute until the vegetables are tender. 4. add the cooked pasta, chicken, and goat cheese to the pan with the vegetables. stir to combine. 5. pour the pasta sauce over the pasta mixture and stir until everything is well coated. 6. serve hot, garnished with additional crumbled goat cheese if desired. notes - recipe generated via chatgpt.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Chicken and Goat Cheese Pasta</h3>
+      </div>
+      
+      <div class="card"
+           data-id="27"
+           data-category="Mains"
+           data-search="chicken cordon bleu source: email date saved: 2018-02-19 ingredients chicken - 4 boneless, skinless chicken breasts - salt, to taste - pepper, to taste - 1 tablespoon garlic powder - 1 tablespoon onion powder - 16 slices swiss cheese - 1/2 lb ham, sliced - 1 cup flour - 4 eggs - 2 cups panko breadcrumbs creamy dijon sauce - 3 tablespoons butter - 2 cloves garlic, minced - 3 tablespoons flour - 2 cups milk - 1/4 cup dijon mustard - 1 cup shredded parmesan cheese instructions 1. sprinkle the chicken breasts with salt, pepper, garlic powder, and onion powder, tossing to coat evenly. 2. on a cutting board, place a chicken breast between two sheets of plastic wrap and pound until about 1/2 inch (1 cm) thick with a meat mallet, rolling pin, or heavy pan. 3. remove the plastic wrap and place a layer of swiss cheese, then ham, then one more layer of swiss cheese. 4. evenly roll the chicken, and place onto a new sheet of plastic wrap. 5. wrap the chicken in the plastic wrap, twist the excess plastic, and roll the chicken while twisting the sides in to tighten and firm up the roll of chicken cordon bleu. tie the excess and chill in the fridge to set for 30 minutes. 6. after the rolls are set, prepare large, wide dishes with flour, beaten egg, and breadcrumbs. 7. dredge the chicken in the flour, egg, and then breadcrumbs. 8. place the breaded chicken cordon bleu in a 325 degrees f (170 degrees c) pot of oil, and cook about 5 minutes per side or until the outside is an even golden brown. if a good color is achieved and the chicken&#39;s center is still not 165 degrees f (74 degrees c), you can finish the chicken in an oven at 325 degrees f (170 degrees c) until that temperature is reached. 9. for the sauce: in a 1.5-quart saucepan on medium heat, melt the butter and cook the garlic until soft. 10. add in flour, and whisk for 1 minute. 11. add in the milk, and whisk until fully combined with the roux. continue whisking until the mixture comes to a simmer and has thickened. 12. add in the dijon mustard, salt, pepper, and parmesan cheese. whisk to combine. set aside. 13. slice chicken and serve drizzled with dijon sauce. notes - serves 6.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Chicken Cordon Bleu</h3>
+      </div>
+      
+      <div class="card"
+           data-id="29"
+           data-category="Mains"
+           data-search="chickpea curry source: email date saved: 2016-12-18 ingredients - 1 tbsp turmeric - 1 tbsp cumin - 2 tbsp ground coriander - 2 white onions, chopped - 300g (2 cups) cherry tomatoes - 4 cloves garlic, chopped - 3 tbsp ginger, grated - 2 red chillies, deseeded - 1 tbsp salt - 320 ml (1.5 cups) coconut cream - 4 tbsp tomato puree - 150g (1 cup) red lentils, parboiled - 1 head broccoli, broken into florets - 2 cups water (more if too dry) - 800g (3.5 cups) chickpeas - handful coriander (cilantro) - 200g (1 bag) spinach for serving - basmati rice - coriander (cilantro) - popadoms - mango chutney instructions 1. put the white onions, cherry tomatoes, garlic, ginger, and red chillies in a food processor and blend to a puree. 2. fry the spices (turmeric, cumin, ground coriander) in a pan. 3. stir in the puree and add salt to taste. 4. stir in the coconut cream and tomato puree. 5. add the parboiled red lentils. 6. add the broccoli. 7. add some water. 8. stir in the chickpeas. 9. stir in the coriander (cilantro) and spinach. 10. add more water if needed. 11. serve with basmati rice and garnish with broken popadoms and coriander (cilantro).">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Chickpea Curry</h3>
+      </div>
+      
+      <div class="card"
+           data-id="30"
+           data-category="Mains"
+           data-search="chili rellenos casserole source: email date saved: 2014-07-05 ingredients - 1/2 lb ground beef - 1/4 chopped onion - 10 oz can whole green chilis - 1 bag shredded cheddar (15 oz) - 2 eggs - 3/4 cup milk - 1/8 cup flour - 1 tsp cumin - 1/2 tsp salt - 1/2 tsp pepper instructions 1. preheat oven to 375. 2. cook meat and onion, drain. add cumin, salt, and pepper. 3. line bottom of pan with whole chilis, save some to chop. 4. layer on hamburger, cheese, and chopped chilis. 5. whisk milk, eggs, and flour. pour over pan. 6. bake 35-40 minutes.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Chili Rellenos Casserole</h3>
+      </div>
+      
+      <div class="card"
+           data-id="31"
+           data-category="Mains"
+           data-search="creamy mac and cheese source: email date saved: 2012-12-12 ingredients - 3 tablespoons all purpose flour - 1 tablespoon cornstarch - pinch of kosher salt - pinch of pepper - half a stick of unsalted butter - 1 cup half and half - 12 oz extra sharp cheddar cheese, shredded - macaroni noodles, cooked instructions 1. combine the flour, cornstarch, salt, and pepper with the butter in a pan. heat and stir, cooking for 4 minutes to make a roux. 2. add 1 cup of half and half to the roux and stir. 3. add half (6 oz) of the shredded cheddar to the sauce. 4. stir and cook for 2 minutes, but don&#39;t let it boil, as the cheese and milk will curdle and the sauce will get too thick. if it gets close to boiling, take it off the heat. if it gets too thick, add some extra half and half to thin it out. when the cheese is melted and it&#39;s nice and creamy, you&#39;re good. 5. put cooked noodles in a bowl. place the remaining 6 oz of cheese on the noodles. mix it up. 6. add the sauce. mix it up. notes - not cheesy enough? add 4 oz of gruyere cheese. - still not cheesy enough? add 4 oz of velveeta.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Creamy Mac and Cheese</h3>
+      </div>
+      
+      <div class="card"
+           data-id="33"
+           data-category="Mains"
+           data-search="halal cart-style chicken and rice with white sauce source: date saved: 2021-08-10 ingredients chicken - 2 tablespoons fresh lemon juice - 1 tablespoon chopped fresh oregano - 1/2 teaspoon ground coriander seed - 3 garlic cloves, roughly chopped (about 1 1/2 tablespoons) - 1/4 cup light olive oil - kosher salt and freshly ground black pepper - 2 pounds boneless, skinless chicken thighs, trimmed of excess fat (6 to 8 thighs) - 1 tablespoon vegetable or canola oil rice - 2 tablespoons unsalted butter - 1/2 teaspoon turmeric - 1/4 teaspoon ground cumin - 1 1/2 cups long-grain or basmati rice - 2 1/2 cups chicken broth - kosher salt and freshly ground black pepper white sauce - 1/2 cup mayonnaise - 1/2 cup greek yogurt - 1 tablespoon sugar - 2 tablespoons white vinegar - 1 teaspoon lemon juice - 1/4 cup chopped fresh parsley - kosher salt and freshly ground black pepper for serving - 1 head iceberg lettuce, shredded - 1 large tomato, cut into wedges - fluffy pocketless pita bread, brushed in butter, lightly toasted, and cut into 1 x 3-inch strips - harissa-style hot sauce instructions 1. marinate the chicken: combine the lemon juice, oregano, coriander, garlic, and olive oil in a blender. blend until smooth. season the marinade to taste with kosher salt and black pepper. place the chicken in a 1-gallon zipper-lock bag and add half of the marinade (reserve the remaining marinade in the refrigerator). turn the chicken to coat, seal the bag, and marinate in the refrigerator for at least 1 hour and up to 4 hours, turning occasionally. 2. cook the chicken: remove the chicken from the bag and pat dry with paper towels. season with kosher salt and pepper, going heavy on the pepper. heat the oil in a 12-inch heavy-bottomed cast iron or stainless-steel skillet over medium-high heat until lightly smoking. add the chicken pieces and cook without disturbing until lightly browned on the first side, about 4 minutes. flip the chicken, reduce heat to medium, and cook until the center of each thigh registers 165 degrees f on an instant-read thermometer, about 6 minutes longer. transfer to a cutting board and cool for 5 minutes. 3. chop the chicken: roughly chop the chicken into 1/2- to 1/4-inch chunks. transfer to a medium bowl, add the remaining marinade, cover loosely with plastic, and refrigerate while you cook the rice and prepare the sauce. 4. cook the rice: melt the butter over medium heat in a large dutch oven. add the turmeric and cumin and cook until fragrant but not browned, about 1 minute. add the rice and stir to coat. cook, stirring frequently, until the rice is lightly toasted, about 4 minutes. add the chicken broth and season to taste with salt and pepper. raise the heat to high and bring to a boil. cover, reduce to a simmer, and cook for 15 minutes without disturbing. remove from heat and allow to rest until the water is completely absorbed and the rice is tender, about 15 minutes. 5. make the sauce: in a small bowl, combine the mayonnaise, yogurt, sugar, vinegar, lemon juice, parsley, and 2 teaspoons black pepper. whisk to combine. season to taste with salt. 6. serve: return the entire contents of the chicken bowl (chicken, marinade, and all juices) to the skillet. cook over medium-high heat, stirring occasionally, until heated through. divide the rice, lettuce, tomato, and toasted pita bread evenly among four to six plates. pile the chicken on top of the rice. top with the white sauce and hot sauce. serve immediately, passing extra sauce at the table. notes - yields 4 servings. total time: about 5 hours 15 minutes (including marinating).">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Halal Cart-Style Chicken and Rice with White Sauce</h3>
+      </div>
+      
+      <div class="card"
+           data-id="34"
+           data-category="Mains"
+           data-search="kara&#39;s chili source: email date saved: 2015-03-23 ingredients - 2 lbs hamburger meat - chopped onion - 1 can ranch style beans (with jalapeno for spicy) - 1 can rotel (mild or spicy) - 1 can tomato sauce (8 oz) - 2 cans of water - 2-3 tablespoons of chili powder - salt and pepper to taste - 1 habanero pepper (optional, for extra heat) instructions 1. cook hamburger meat with chopped onion. drain. 2. dump the following into a large pot: ranch style beans, rotel, tomato sauce, water, and chili powder. 3. add the cooked meat and onion to the pot. 4. cook on low for at least one hour. the longer it simmers the better the flavor. 5. season with salt and pepper to taste. notes - for the most spicy heat, cut a habanero pepper in half and stir in the mixture for 10 minutes, then remove the two halves.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Kara's Chili</h3>
+      </div>
+      
+      <div class="card"
+           data-id="32"
+           data-category="Mains"
+           data-search="lighter fettuccine alfredo source: date saved: 2020-04-23 ingredients - 5 ounces (140g) grated parmigiano reggiano cheese, plus more for sprinkling - 2 tablespoons (30ml) heavy cream - 1 large egg - 1 teaspoon (3g) cornstarch - 2 tablespoons (30ml) extra-virgin olive oil, plus more for serving - 1/2 teaspoon grated lemon zest (optional) - kosher salt and freshly ground black pepper - 1 pound (450g) fresh fettuccine, or 12 ounces (340g) dried fettuccine - 1 teaspoon minced garlic (about 1 medium clove) - 2 tablespoons (30g) unsalted butter - minced fresh parsley or chives instructions 1. combine cheese, heavy cream, egg, cornstarch, olive oil, and lemon zest (if using) in a large bowl. season lightly with salt and heavily with black pepper and whisk to combine. set aside. 2. bring a large pot of salted water to a boil over high heat. add pasta and cook, stirring frequently to prevent sticking, until cooked but still very firm (not quite al dente), about 45 seconds for fresh pasta or 1-2 minutes less than package directions indicate for dried pasta. drain pasta into a colander set over a large bowl. transfer 2 cups (480ml) of cooking water to a liquid measuring cup and discard the rest. transfer pasta to the now-empty bowl. add garlic and butter and toss to coat. 3. whisking constantly, slowly add 1 1/2 cups of pasta cooking water to bowl with cheese mixture. transfer cheese mixture to the now-empty pasta cooking pot, scraping the bottom to make sure you get everything. cook over medium-high heat, stirring constantly with a rubber spatula, until mixture comes to a boil and thickens, about 45 seconds. season sauce to taste with more salt and pepper as desired. transfer pasta to sauce mixture and turn to coat. just before serving, stir in more pasta water to thin sauce out as necessary. serve immediately, sprinkle with minced herbs, black pepper, and cheese, and drizzle with additional olive oil. notes - yields 4 servings. total time: 35 minutes.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Lighter Fettuccine Alfredo</h3>
+      </div>
+      
+      <div class="card"
+           data-id="35"
+           data-category="Mains"
+           data-search="lobster macaroni and cheese source: date saved: unknown ingredients - 1 box penne pasta - 1 stick butter - 2 chopped garlic cloves - 1/2 cup flour - 1/2 cup white wine - 1 can evaporated milk - 4 cups milk - 1 tablespoon paprika - 2 tablespoons dijon mustard - 1/4 teaspoon cayenne pepper - 8 ounces cheddar cheese, grated - 8 ounces monterrey jack cheese, grated - salt and pepper - 2 one-pound lobsters, cooked and shelled - 2 cups breadcrumbs instructions 1. preheat oven to 350 degrees. drop the pasta into boiling, salted water and cook until almost tender, about 12 minutes. make sure the water tastes like a day at the beach, as the pasta will absorb it and become properly seasoned. the pasta should not be fully cooked; it should have just a touch of firmness when tasted. drain well. 2. melt the butter in a saucepan over medium heat, add garlic and cook for several minutes until it softens. add the flour and stir with a wooden spoon until a smooth paste forms. continue cooking for a few more minutes, in effect toasting the mixture and adding flavour to it. slowly stir in the wine and continue mixing until smooth and then add both milks, mixing well again. continue whisking until the mixture coats the back of a spoon. add paprika, dijon, cayenne, salt, pepper and cheeses and stir until melted. 3. roughly chop lobster meat and add to the cheese mixture along with the pasta. stir well to combine and season with salt and pepper. pour into a 9-inch by 13-inch ovenproof casserole or similar dish. sprinkle with breadcrumbs and bake until the mixture is heated through and the breadcrumbs are golden brown, about 30 minutes. notes - yield: 6 servings. - recipe by chef michael smith. this version is also great without the lobster.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Lobster Macaroni and Cheese</h3>
+      </div>
+      
+      <div class="card"
+           data-id="36"
+           data-category="Mains"
+           data-search="steak taco bowl source: email date saved: 2016-05-06 ingredients - 1 lb skirt steak - 2 limes, zested and juiced - 4 tbsp tequila - 2 tsp garlic powder - 1/2 tsp cumin powder - 1/2 tsp cayenne powder - salt and pepper to taste - 2 flour tortillas - vegetable oil for brushing tortillas - 1 romaine lettuce heart, chopped - 1/4 cup canned black beans, drained - 1/4 cup tomato, diced - 1/4 cup cooked corn - 1 lime - cilantro to taste - sliced jalapeno to taste - sour cream - hot sauce to taste instructions 1. combine steak with lime zest, lime juice, tequila, garlic powder, cumin, cayenne, salt, and pepper. cover and set aside to marinate for at least 1 hour or overnight. 2. make tostada bowls: preheat oven to 300 degrees f. brush tortillas on both sides with vegetable oil. place them in oven-safe bowls to create bowl-like shapes. bake for about 6-8 minutes, checking occasionally to prevent burning. remove from oven and keep in the bowl until cool. 3. in a large bowl, combine chopped lettuce, black beans, tomato, corn, and some lime juice. 4. in a skillet or grill on medium-high heat, cook steak on both sides until seared and cooked to your preferred doneness. set aside to rest for about 5 minutes. slice into bite-sized pieces. 5. to assemble, place the salad in the tostada bowl, top with steak, sour cream, jalapenos, cilantro, and hot sauce.">
+        <span class="card-cat-badge">Mains</span>
+        <h3 class="card-title">Steak Taco Bowl</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="8"
+           data-category="Breads"
+           data-search="bavarian pretzels source: date saved: 2014-03-14 ingredients dough: - 1 package active dry yeast (2 tsp) - 1/8 cup warm water (105 degrees f) - 1 1/3 cups warm water - 1/8 tsp salt - 1 tablespoon brown sugar - 4 1/2 cups flour (520 grams) baking soda bath: - 2 tablespoons baking soda per cup of water - coarse ground sea salt or pretzel salt instructions 1. dissolve yeast in 1/8 cup warm water and brown sugar. stir in 1 1/3 cups warm water, add salt and flour. knead dough until smooth and elastic. dough does not need to rise. 2. heat oven to 400 degrees f. 3. in a saucepan, measure 2 tablespoons baking soda to each cup of water. put enough water to fill the saucepan at least 3 inches high. bring soda and water mixture to a light boil and set heat to simmer. make sure the baking soda is well dissolved. 4. cut the dough into eight pieces. roll a long thick pencil shape with your hands but keep the middle a little thicker. pick up both ends, cross to form rabbit ears and then twist the ends and pull them back to the rest of the loop. place aside on lightly floured surface and let rise 10 minutes or so. 5. place pretzels one at a time in water/baking soda mixture for 10-15 seconds. push down with a plastic utensil to ensure good coverage. remove the pretzel from the bath (let drain a few seconds) and place onto a pan lined with parchment paper. 6. use a sharp knife and slit the fattest part of the pretzel lengthwise. salt the top of pretzels with coarse ground sea salt or pretzel salt. 7. place cookie sheet with pretzels into the oven for 18-19 minutes or until pretzel is to desired darkness. notes pretzels made with lye will get quite dark and the tips should be hard. pretzels made with baking soda will not get as brown. enjoy while warm.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Bavarian Pretzels</h3>
+      </div>
+      
+      <div class="card"
+           data-id="10"
+           data-category="Breads"
+           data-search="choereg (armenian easter bread) source: email date saved: 2013-03-12 ingredients yeast mixture: - 1/2 cup lukewarm water - 2 teaspoons white sugar - 2 (.25 ounce) envelopes active dry yeast bread dough: - 1 cup whole milk - 2 cups unsalted butter - 1 cup white sugar - 5 eggs - 6 cups all-purpose flour - 1 1/2 teaspoons baking powder - 1 1/2 tablespoons ground mahleb - 1 1/2 teaspoons salt top brushing: - 1 egg, beaten - 1 tablespoon sesame seeds instructions 1. in a saucepan over medium heat, combine the milk, butter and margarine. heat until butter and margarine are melted, but do not let it boil. stir in 1 cup of sugar until dissolved, then set aside to cool to lukewarm. 2. meanwhile, in a small bowl, dissolve 2 teaspoons of sugar in warm water. sprinkle the yeast over the surface, and let stand until frothy, about 10 minutes. 3. crack the eggs into a large bowl, and stir a little to break up the yolks. slowly pour in the heated milk mixture while whisking constantly, so as to temper the eggs and not cook them. add the yeast mixture, and stir just until blended. 4. in a large bowl, combine the flour, baking powder, mahleb, and salt. make a well in the center, and pour in the wet mixture. stir until it forms a sticky dough. pour onto a floured surface, and knead in additional flour as needed to make a more substantial dough. knead for about 10 minutes. place in an oiled bowl, and set in a warm place to rise for about 2 hours, or until doubled in size. 5. when the dough has doubled, punch down again, and let rise until doubled. it will only take about one hour this time. 6. separate the dough into 5 even portions, then separate each of those into thirds. roll each of those into ropes about 12 inches long. braid sets of three ropes together, pinching the ends to seal, and tucking them under for a better presentation. place the loaves onto baking sheets lined with parchment paper. loaves should be spaced 4 inches apart. set in a warm place to rise until your finger leaves an impression behind when you poke the loaf gently. 7. preheat the oven to 350 degrees f (175 degrees c). brush the loaves with beaten egg, and sprinkle with sesame seeds. 8. bake for 25 minutes in the preheated oven, or until nicely golden brown all over.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Choereg (Armenian Easter Bread)</h3>
+      </div>
+      
+      <div class="card"
+           data-id="11"
+           data-category="Breads"
+           data-search="dutch oven bread source: email date saved: 2015-06-11 ingredients - 4 cups flour - 1 1/2 cups water - 1 teaspoon active dry yeast - kosher salt or coarse sea salt - vegetable oil or vegetable oil spray - olive oil instructions 1. combine the flour, water, yeast and salt in the bowl of a stand mixer fitted with a dough hook. mix on medium speed until the dough is smooth and elastic, 5 to 10 minutes. depending on the size of the bowl, you may need to stop the mixer and remove the dough from the dough hook if the dough is not developing thoroughly. when the dough looks smooth, cut off a piece and stretch it. if it stretches to the point of transparency, it&#39;s mixed enough. if not, continue mixing. 2. remove the bowl from the mixer and cover it with a pot lid or plastic wrap. allow the dough to rise until it has doubled in size and does not spring back when you push your finger into it, 2 to 4 hours. 3. turn the dough out onto a work surface and knead it to release the gas and redistribute the yeast. shape it roughly into a ball, cover it with a towel, and let stand for 10 minutes to allow the gluten to relax. 4. shape the dough into a tight ball -- the tighter the better -- by rolling it on the work surface between your palms. 5. spray or coat the bottom and sides of a large dutch oven or other heavy ovenproof pot (5 1/2 quarts or larger) with vegetable oil. put the dough in the center of the pot and place the lid on. allow the dough to rise again, 30 to 60 minutes (less if it&#39;s very hot and humid, more if it&#39;s cold). 6. preheat the oven to 450 f. 7. rub 1 tablespoon olive oil, or more if you like, gently over the surface of the dough. score the bread with a sharp knife or razor, making an x or a hash mark; this will allow the dough to expand freely. sprinkle the dough with salt. cover the pot and place it in the oven. 8. after 30 minutes, remove the lid, reduce the oven temperature to 375 f, and continue baking until the bread is nicely browned and cooked through. it should have an internal temperature of 200 f or so when done. 9. allow the bread to rest on a rack for at least 30 minutes so that the interior finishes cooking. notes created for the 5 1/2 qt. round dutch oven. makes 1 loaf.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Dutch Oven Bread</h3>
+      </div>
+      
+      <div class="card"
+           data-id="12"
+           data-category="Breads"
+           data-search="easter bread source: email date saved: 2014-06-11 ingredients - 1 cup whole milk - 1 cup unsalted butter - 1 cup margarine - 1 cup white sugar - 1/2 cup lukewarm water - 2 teaspoons white sugar - 2 (.25 ounce) envelopes active dry yeast - 5 eggs - 6 cups all-purpose flour, or as needed - 1 1/2 teaspoons baking powder - 1 1/2 tablespoons ground mahleb - 1 1/2 teaspoons salt - 1 egg, beaten - 1 tablespoon sesame seeds instructions 1. in a saucepan over medium heat, combine the milk, butter and margarine. heat until butter and margarine are melted, but do not let it boil. stir in 1 cup of sugar until dissolved, then set aside to cool to lukewarm. 2. meanwhile, in a small bowl, dissolve 2 teaspoons of sugar in warm water. sprinkle the yeast over the surface, and let stand until frothy, about 10 minutes. 3. crack the eggs into a large bowl, and stir a little to break up the yolks. slowly pour in the heated milk mixture while whisking constantly, so as to temper the eggs and not cook them. add the yeast mixture, and stir just until blended. 4. in a large bowl, combine the flour, baking powder, mahleb, and salt. make a well in the center, and pour in the wet mixture. stir until it forms a sticky dough. pour onto a floured surface, and knead in additional flour as needed to make a more substantial dough. knead for about 10 minutes. place in an oiled bowl, and set in a warm place to rise for about 2 hours, or until doubled in size. 5. when the dough has doubled, punch down again, and let rise until doubled. it will only take about half as long this time. 6. separate the dough into 5 even portions, then separate each of those into thirds. roll each of those into ropes about 12 inches long. braid sets of three ropes together, pinching the ends to seal, and tucking them under for a better presentation. place the loaves onto baking sheets lined with parchment paper. loaves should be spaced 4 inches apart. set in a warm place to rise until your finger leaves an impression behind when you poke the loaf gently. 7. preheat the oven to 350 degrees f (175 degrees c). brush the loaves with beaten egg, and sprinkle with sesame seeds. 8. bake for 25 minutes in the preheated oven, or until nicely golden brown all over. notes you may preheat the oven to 200 degrees f (95 degrees c) while mixing, and then turn it off and let it cool down to about 100 degrees. place your dough in there to proof with the oven light on, and it will rise much faster.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Easter Bread</h3>
+      </div>
+      
+      <div class="card"
+           data-id="14"
+           data-category="Breads"
+           data-search="kitchenaid white bread source: date saved: 2012-04-03 ingredients - 6 to 7 cups all-purpose flour - 2 tablespoons sugar - 3 1/2 teaspoons salt - 3 packages active dry yeast - 1/4 cup butter or margarine, softened - 2 cups very warm water (120 to 130 degrees f) instructions 1. add 5 1/2 cups flour, sugar, salt, yeast and butter to your mixer bowl. attach dough hook to mixer. turn to speed 2 and mix about 20 seconds. 2. gradually add 2 cups very warm water (120 to 130 degrees f). mix about 1-1/2 minutes longer. 3. continuing on speed 2, add remaining 1/2 cup to 1 1/2 cups flour (1/2 cup at a time) and mix until dough clings to hook and cleans side of bowl, about 2 minutes. 4. knead on speed 2 about 2 minutes longer. 5. cover with plastic wrap and a towel. let rest for 20 minutes. 6. divide dough in half. 7. on a lightly floured surface, roll each half into a rectangle, approximately 9x14 inches. 8. to create the loaf shape, starting at the short end, roll the dough tightly. 9. pinch to seal seam then turn under. 10. place the dough, seam side down, in greased 8 1/2 x 4 1/2 x 2 1/2 inch loaf pans. 11. brush each loaf with oil and cover loosely with plastic wrap. 12. refrigerate 2 to 12 hours. 13. when ready to bake, uncover dough carefully. let stand at room temperature 10 minutes. puncture any gas bubbles. 14. bake at 400 degrees f for 35-40 minutes. 15. remove from pans immediately and cool on wire racks. notes rapid mix, cool rise method. makes 2 loaves.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">KitchenAid White Bread</h3>
+      </div>
+      
+      <div class="card"
+           data-id="20"
+           data-category="Breads"
+           data-search="naan bread with yogurt source: email date saved: 2024-04-03 ingredients - 1/2 cup warm water - 2 tablespoons active dry yeast - 1 teaspoon sugar - 2 1/2 cups all-purpose flour - 1/2 cup yogurt - 1 tablespoon olive oil - pinch of salt - butter, garlic, and cilantro for topping instructions 1. combine warm water, yeast, and sugar. stir and rest for 10 minutes. 2. add flour, yogurt, olive oil, and salt. mix and knead for 10 minutes. 3. form into a ball, cover with a damp towel, and rest for 1 hour. 4. cut dough to size and flatten each piece. 5. heat a pan on medium-low with olive oil. 6. cook each piece for about 2 minutes on each side. 7. top with butter, garlic, and cilantro.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Naan Bread with Yogurt</h3>
+      </div>
+      
+      <div class="card"
+           data-id="15"
+           data-category="Breads"
+           data-search="overnight rise pizza dough source: email date saved: 2012-12-12 ingredients - 6 1/2 cups bread flour - 2 teaspoons yeast - 3 1/4 cup cold water - 6 tablespoons olive oil - 2 teaspoons salt - 3 teaspoons sugar instructions 1. mix yeast, sugar and salt together with a cup of water. 2. put 5 cups of flour in mixer (or bowl if you&#39;re doing it old school). 3. add yeast mixture, olive oil and water. start mixing. 4. slowly add remaining flour until you get a moist ball of dough. don&#39;t put too much flour in because the dough will get too dry. 5. knead dough for around 10 minutes. 6. cut the dough ball into 8 individual balls. 7. coat each ball with more olive oil, put them in a bowl and let them rise overnight in the fridge. 8. take them out of the fridge an hour prior to cooking. 9. preheat your oven with pizza stone for an hour, and set the temp as high as it will go. 10. pizzas take 3 or 4 minutes to cook depending on toppings. notes makes roughly 8 10&#34; pizzas.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Overnight Rise Pizza Dough</h3>
+      </div>
+      
+      <div class="card"
+           data-id="9"
+           data-category="Breads"
+           data-search="red lobster cheddar biscuits source: email date saved: 2013-05-07 ingredients biscuits: - 2 1/2 cups bisquick baking mix - 3/4 cup cold whole milk - 4 tablespoons cold butter (1/2 stick) - 1/4 teaspoon garlic powder - 1 heaping cup grated cheddar cheese brush onto the biscuits: - 2 tablespoons butter, melted - 1/4 teaspoon dried parsley flakes - 1/2 teaspoon garlic powder - heavy pinch of salt instructions 1. preheat your oven to 400 degrees. 2. combine bisquick with cold butter in a medium bowl using a pastry cutter or a large fork. you don&#39;t want to mix too thoroughly. there should be small chunks of butter in there that are about the size of peas. add cheddar cheese, milk, and 1/4 teaspoon garlic. mix by hand until combined, but don&#39;t over mix. 3. drop approximately 1/4-cup portions of the dough onto an ungreased cookie sheet using an ice cream scoop. 4. bake for 15 to 17 minutes or until the tops of the biscuits begin to turn light brown. 5. when you take the biscuits out of the oven, melt 2 tablespoons butter in a small bowl in your microwave. stir in 1/2 teaspoon garlic powder and the dried parsley flakes. use a brush to spread this garlic butter over the tops of all the biscuits. use up all of the butter. notes makes one dozen biscuits.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Red Lobster Cheddar Biscuits</h3>
+      </div>
+      
+      <div class="card"
+           data-id="13"
+           data-category="Breads"
+           data-search="simple flour tortillas source: email date saved: 2013-09-15 ingredients - 3 cups flour - 1 teaspoon salt - 1/3 cup oil - 1 cup warm water instructions 1. mix flour and salt in a medium mixing bowl. cut in oil with a fork. 2. slowly incorporate water, mixing with your hands until a soft dough forms. you will probably not use the entire 1 cup of warm water; closer to 3/4 cup is typical. 3. if you have an electric stove, preheat pan to medium heat. 4. form 2 inch balls of dough. 5. roll flat with a rolling pin (or use a tortilla press). roll the dough as flat as you possibly can -- if you try for paper thin, you&#39;ll probably end up with cardstock thin and it&#39;ll be perfect. 6. place tortilla in hot pan. when it bubbles, flip. cook second side until brown spots form. notes - makes approximately fourteen 10-inch tortillas. - no need to flour the counter or grease the pan. if the dough is right, it will stretch and not stick. - you can stack rolled tortillas before cooking, so you can roll as you go or roll ahead. - store in a gallon ziploc bag in the fridge. make sure the bag is airtight or the tortillas will dry out. - you can stack finished tortillas directly from the pan to a cooling plate before they are fully cooled.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Simple Flour Tortillas</h3>
+      </div>
+      
+      <div class="card"
+           data-id="16"
+           data-category="Breads"
+           data-search="simple whole wheat bread source: date saved: 2012-09-01 ingredients - 3 cups warm water (110 degrees f/45 degrees c) - 2 (.25 ounce) packages active dry yeast - 2/3 cup honey, divided - 5 cups bread flour - 5 tablespoons butter, melted, divided - 1 tablespoon salt - 4 cups whole wheat flour, or more as needed instructions 1. gather all ingredients. 2. mix warm water, yeast, and 1/3 cup honey in a large bowl to dissolve. 3. add 5 cups bread flour, and stir to combine. 4. let sit for 30 minutes, or until big and bubbly. 5. mix in 3 tablespoons melted butter, remaining 1/3 cup honey, and salt. stir in 2 cups whole wheat flour. 6. transfer dough to a floured work surface and gradually knead in remaining 2 cups whole wheat flour. 7. knead until dough starts to pull away from the work surface, adding more whole wheat flour if necessary; dough should be a bit tacky to the touch, but not too sticky. 8. place in a greased bowl, turning once to coat the surface of the dough. 9. cover with a dish towel and let rise in a warm place until doubled, 45 minutes to 1 hour. 10. grease three 9x5-inch loaf pans. punch down the dough, and divide it into 3 loaves. 11. place in the prepared loaf pans, and allow to rise until dough has topped the pans by one inch, another 45 minutes to 1 hour. 12. preheat the oven to 350 degrees f (175 degrees c). bake the risen loaves in the preheated oven until golden brown for 25 to 30 minutes; do not overbake. 13. lightly brush the tops of the loaves with remaining 2 tablespoons melted butter when done to prevent crust from getting hard. 14. cool completely. notes yields 36 servings (3 loaves). total time approximately 170 minutes.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Simple Whole Wheat Bread</h3>
+      </div>
+      
+      <div class="card"
+           data-id="17"
+           data-category="Breads"
+           data-search="soft pretzels source: email date saved: 2011-10-21 ingredients - 1 1/8 cups water (70 to 80 degrees f) - 3 cups all-purpose flour - 3 tablespoons brown sugar - 1 1/2 teaspoons active dry yeast - 2 quarts water - 1/2 cup baking soda - coarse salt instructions 1. in bread machine pan, place the first four ingredients in order suggested by manufacturer. select dough setting (check dough after 5 minutes of mixing; add 1 to 2 tablespoons water or flour if needed). 2. when cycle is completed, turn dough onto a lightly floured surface. divide dough into eight balls. roll each into a 20-inch rope; form into pretzel shape. 3. in a saucepan, bring water and baking soda to a boil. drop pretzels into boiling water, two at a time; boil for 10-15 seconds. remove with a slotted spoon; drain on paper towels. 4. place pretzels on greased baking sheets. bake at 425 degrees f for 8-10 minutes or until golden brown. 5. spritz or lightly brush with water. sprinkle with salt.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Soft Pretzels</h3>
+      </div>
+      
+      <div class="card"
+           data-id="18"
+           data-category="Breads"
+           data-search="sourdough bagels source: email date saved: 2022-12-13 ingredients dough: - 200 g (1 cup) bubbly, active 100% hydration sourdough starter - 315 g (1-1/4 cups) cold water - 30 g (2 tbsp) barley malt syrup (or substitute maple syrup) - 750 g (5 cups) all-purpose flour - 10 g (2 tsp) fine salt - flour or semolina for proofing for boiling: - 1 tablespoon baking soda - 1 tablespoon brown sugar instructions day 1: 1. in the bowl of a stand mixer fitted with a paddle attachment, mix your bubbly, active starter with the water and maple syrup until well-combined. alternatively, mix in a standard large bowl with a fork or whisk. 2. add in the flour and salt and transition to a dough hook. knead on medium until the dough is smooth and somewhat pliable, about 6-7 minutes. alternatively, knead the dough by hand on a countertop until smooth and pliable. 3. shape into a ball (return to bowl, if applicable) and cover bowl with a towel. rest 20 minutes. 4. divide the dough into 8 equal pieces for large bagels or 10 equal pieces for smaller ones. shape each piece into a small ball by tucking the corners underneath, cupping the dough, and rolling it in a circular fashion on a clean, flour-free countertop. this helps to create surface tension and a skin on the ball. 5. cover dough balls and rest another 15 minutes. line a baking sheet with parchment paper and sprinkle generously with flour or semolina. if you make 10 bagels, you will need to use 2 baking sheets. 6. to shape the bagels, you have 2 options: (a) flatten the ball of dough into a disc and use your fingertips to roll into a log about 8 inches long. wrap the log around your three middle fingers with the ends overlapping by 2 inches on the inside of your hand. roll gently, palm down, until the ends are joined together. this will create a larger hole in the centre of the bagel. (b) poke a hole with your finger directly through the centre of the dough ball. insert both index fingers into the hole and roll fingers around each other to stretch out the centre (like a barrel roll) until it&#39;s about the size of a walnut. this will create a smaller bagel hole, but is much faster and more efficient. place on the lined baking sheet and repeat with the rest of the bagels. 7. cover the shaped bagels with a towel, let them proof at room temperature for 2.5 to 4.5 hours, or until puffy. this could take more time, depending on the temperature in your house. take a test bagel and place it in cold water. if it floats, they&#39;re done proofing. dry the test bagel off and return to the baking sheet. if it sinks, it still needs to proof longer. 8. once proofed, cover the pan with plastic wrap and refrigerate 12 to 24 hours. day 2: 9. preheat oven to 450 degrees f (230 degrees c). place toppings on flat plates, so they are ready to go. 10. bring a large pot of water to a rolling boil and add the baking soda and brown sugar. remove the bagels from the fridge and gently place them, a couple at a time, into the water. boil for 15-20 seconds on each side. 11. remove boiled bagels with a slotted spoon to get rid of most of the water. 12. shake off excess water and immediately dip the top of bagel into desired toppings. set back on the baking sheet. repeat this process with the remaining bagels. 13. place the baking sheet into the center of the oven and turn it down to 400 degrees f (200 degrees c). 14. bake for 18 to 22 minutes or until golden on top. cool on a wire rack until ready to serve. notes this is a low hydration dough and it will be stiff. your mixer might have to work pretty hard at it and you may want to add another tablespoon or two of water, but it is meant to be stiff in texture.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Sourdough Bagels</h3>
+      </div>
+      
+      <div class="card"
+           data-id="19"
+           data-category="Breads"
+           data-search="sourdough bread with all-purpose flour source: email date saved: 2022-12-13 ingredients for a small loaf: - 50 g (1/4 cup) bubbly, active starter - 165 g (1/2 cup + 3 tbsp) water - 5 g (1 tsp) fine sea salt - 250 g (2 cups + 1 tbsp) all-purpose flour (trader joe or king arthur) for a larger, standard size loaf: - 50 g (1/4 cup) bubbly, active starter - 330 g (1 1/3 cup + 1 tbsp) water - 9 g (1 1/2 tsp) fine sea salt - 500 g (4 1/4 cups) all-purpose flour (trader joe or king arthur) instructions make the dough: 1. in the evening, whisk the starter and water together in a large bowl. add the flour and salt. mix with a fork until a stiff dough forms, then finish by hand to fully incorporate the flour. it will feel rough and shaggy, and slightly sticky. cover with a damp towel or plastic wrap and let rest at room temperature (68 f) for 30 minutes. 2. after the dough has rested, work the dough into a ball. to do this, grab a portion of the dough and fold it over, pressing your fingertips into the center. repeat, working your way around the dough until it begins to tighten. bulk rise: 3. cover the bowl (damp towel or plastic wrap) and let rise overnight at room temperature. this will take about 10 to 12 hours at 68 f. the dough is ready when it no longer looks dense and has doubled in size. if using a standard 8-inch bowl, the dough will rise about 1/2 way up the sides. 4. optional: about 1 hour into the bulk rise, do 1 set of stretch and folds. repeat 1 hour later. this will increase the overall volume of the bread. shape the dough (preshape): 5. the following morning, line a small bowl with a cotton or linen cloth. sprinkle with flour. 6. remove the dough onto a floured surface. to shape the dough into a round, starting at the top, gently fold the dough over toward the center. give it a turn and fold over the next section. repeat until you have come full circle. using a bench knife, scoop up the dough and flip it over (the smooth side should be facing up). cover and rest for 20-30 minutes. final shape: 7. after the dough has rested, flip it over again (the smooth side should be facing down now). shape it again following the steps above. flip it back over. with floured hands, gently cup the dough and pull it toward you in a circular motion to tighten its shape. 8. place the dough into the lined bowl, seam side up. cover the dough with the cloth overhang. second rise: 9. the dough needs to rise again. rest for 30 minutes to 1 hour. the dough is ready when it looks puffy and has risen slightly, but has not yet doubled in size. 10. preheat your oven to 450 f. cut a sheet of non-stick parchment paper to fit the size of your baking pot, leaving enough excess around the sides to remove the bread. score the dough: 11. place the parchment over the dough and invert the bowl to release. sprinkle the dough with flour and gently rub the surface with your hands. using the tip of a bread lame, small serrated knife, or a razor blade, make four shallow 4-inch long cuts at 3, 6, 9, and 12 o&#39;clock around the dough. use the parchment paper to transfer the dough to the baking pot. bake the dough: 12. reduce the heat to 425 f. bake the dough on the center rack for 20 minutes, covered. remove the lid, and continue to bake for 30-35 minutes until golden brown (40 minutes uncovered for the larger, standard loaf). 13. when finished, transfer to a wire rack. cool for 1 hour before slicing, for best texture. notes use 50 g of starter for both the small and standard size loaf. using a smaller amount of starter with a long, overnight rise will help to prevent over-proofed dough in the morning. if the dough feels too wet, add 1 tbsp of flour and mix thoroughly by hand, adding more as needed. if it&#39;s too dry, add 1 tbsp of water.">
+        <span class="card-cat-badge">Breads</span>
+        <h3 class="card-title">Sourdough Bread with All-Purpose Flour</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="42"
+           data-category="Sauces"
+           data-search="cashew cheese sauce source: email date saved: 2016-11-18 ingredients - 1 cup (240 ml) water - 2 tbsp (30 ml) lemon juice - 1/4 cup (50 g) green chilies - 1 cup (70 g) whole raw cashews - 1 1/4 tsp onion powder - 1/4 cup (30 g) nutritional yeast - 2 tsp salt instructions 1. add all ingredients to a vitamix or high-powered blender. 2. blend until smooth. 3. enjoy. notes recipe originally from vitamix.">
+        <span class="card-cat-badge">Sauces</span>
+        <h3 class="card-title">Cashew Cheese Sauce</h3>
+      </div>
+      
+      <div class="card"
+           data-id="43"
+           data-category="Sauces"
+           data-search="hill country bbq sauce source: email date saved: 2015-06-21 ingredients - 1/2 lb butter - 1/2 yellow onion - 1 1/2 cups ketchup - 1/2 cup apple cider vinegar - 2 oz brown sugar - 1 tsp kosher salt - 1 tsp black pepper - 1 tsp chili powder - 1 tsp garlic powder - 1/2 lemon instructions 1. combine all ingredients and cook together (no further instructions were provided in the original). notes original email was an ingredient list only. no cooking instructions were included.">
+        <span class="card-cat-badge">Sauces</span>
+        <h3 class="card-title">Hill Country BBQ Sauce</h3>
+      </div>
+      
+      
+      
+      <div class="card"
+           data-id="22"
+           data-category="Desserts"
+           data-search="homemade vanilla ice cream (custard-based) source: email date saved: 2023-05-08 ingredients - 2 cups heavy cream - 1 cup whole milk - 3/4 cup granulated sugar - pinch of salt - 6 large egg yolks - 2 teaspoons pure vanilla extract instructions 1. in a medium saucepan, combine the heavy cream, whole milk, sugar, and salt. cook over medium heat, stirring occasionally, until the sugar has dissolved and the mixture is hot but not boiling. 2. in a separate bowl, whisk together the egg yolks until they are light and frothy. 3. slowly pour about half of the hot cream mixture into the egg yolks, whisking constantly to prevent the eggs from curdling. pour the egg mixture back into the saucepan with the remaining cream mixture and cook over low heat, stirring constantly with a wooden spoon, until the mixture thickens and coats the back of the spoon. be careful not to let the mixture boil or it may curdle. 4. remove the saucepan from the heat and stir in the vanilla extract. let the mixture cool to room temperature. 5. pour the mixture into your ice cream maker and churn according to the manufacturer&#39;s instructions until it reaches a soft-serve consistency. 6. transfer the ice cream to a freezer-safe container and freeze for at least 2 hours or until firm. 7. when ready to serve, let the ice cream sit at room temperature for a few minutes to soften before scooping. notes recipe was generated via chatgpt. works with any standard ice cream maker.">
+        <span class="card-cat-badge">Desserts</span>
+        <h3 class="card-title">Homemade Vanilla Ice Cream (Custard-Based)</h3>
+      </div>
+      
+      <div class="card"
+           data-id="23"
+           data-category="Desserts"
+           data-search="kitchenaid vanilla ice cream source: email date saved: 2014-05-23 ingredients - 2 1/2 cups half-and-half - 8 egg yolks - 1 cup sugar - 2 1/2 cups whipping cream - 4 teaspoons vanilla - 1/8 teaspoon salt instructions 1. heat half-and-half until very hot but not boiling, stirring often. remove from heat; set aside. 2. place egg yolks and sugar in mixer bowl with wire whip. turn to speed 2 and mix about 30 seconds until slightly thickened. 3. continuing on speed 2, very gradually add half-and-half; mix until blended. 4. return half-and-half mixture to medium saucepan; cook over medium heat until small bubbles form around edge and mixture is steamy, stirring constantly. 5. transfer half-and-half mixture into large bowl; stir in whipping cream, vanilla, and salt. cover and chill thoroughly, at least 8 hours. 6. assemble kitchenaid freeze bowl. turn to stir (speed 1). 7. using a container with a spout, pour mixture into freeze bowl. continue on stir (speed 1) for 15 to 20 minutes or until desired consistency. 8. immediately transfer ice cream into serving dishes, or freeze in airtight container. notes recipe is designed for the kitchenaid stand mixer ice cream attachment.">
+        <span class="card-cat-badge">Desserts</span>
+        <h3 class="card-title">KitchenAid Vanilla Ice Cream</h3>
+      </div>
+      
+      
+    </div>
+
+    <p class="no-results" id="no-results" style="display:none">No recipes matched your search.</p>
+  </main>
+
+  <!-- ── OVERLAY ── -->
+  <div class="detail-overlay" id="detail-overlay"></div>
+
+  <!-- ── DETAIL PANEL ── -->
+  <aside class="detail-panel" id="detail-panel">
+    <div class="detail-toolbar">
+      <button class="close-btn" id="close-btn" title="Close">✕</button>
+      <button class="print-btn" id="print-btn">⎙ Print recipe</button>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </aside>
+
+</div>
+
+<!-- Hidden recipe HTML (loaded on card click) -->
+
+
+<template id="recipe-21"><h1>Sous Vide Egg Bites</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2024-12-30</p>
+<h2>Ingredients</h2>
+<ul>
+<li>4 slices bacon, diced</li>
+<li>6 large eggs</li>
+<li>1 1/4 cups cottage cheese (4% milkfat)</li>
+<li>1 1/4 cups shredded Gruyere (or a blend of Gruyere and Cheddar or Monterey Jack)</li>
+<li>2 tablespoons cornstarch</li>
+<li>Heaping 1/4 teaspoon salt</li>
+<li>1/8 teaspoon freshly ground black pepper</li>
+<li>1/2 teaspoon hot sauce, such as Tabasco</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Blend eggs, cottage cheese, shredded Gruyere, cornstarch, salt, pepper, and hot sauce together until smooth.</li>
+<li>Divide diced bacon among silicone egg bite molds or small mason jars. Pour egg mixture over the bacon.</li>
+<li>Cover molds/jars and cook sous vide at 175°F for one hour.</li>
+<li>Remove from water bath and crisp the outside before serving.</li>
+</ol>
+<h2>Notes</h2>
+<p>None.</p></template>
+
+
+
+<template id="recipe-0"><h1>Berbere Spice Chicken Wings</h1>
+<p><strong>Source:</strong> https://tasty.co/recipe/berbere-spice-chicken-wings
+<strong>Date saved:</strong> 2020-08-11</p>
+<h2>Ingredients</h2>
+<h3>Berbere Spice Mix</h3>
+<ul>
+<li>3 tablespoons paprika</li>
+<li>1 tablespoon salt</li>
+<li>1 tablespoon cayenne</li>
+<li>1 teaspoon ground fenugreek</li>
+<li>1 teaspoon ground ginger</li>
+<li>1 teaspoon onion powder</li>
+<li>1/2 teaspoon ground cardamom</li>
+<li>1/2 teaspoon ground nutmeg</li>
+<li>1/2 teaspoon garlic powder</li>
+<li>1/4 teaspoon ground cloves</li>
+<li>1/4 teaspoon ground cinnamon</li>
+<li>1/4 teaspoon allspice</li>
+</ul>
+<h3>Wings</h3>
+<ul>
+<li>12 chicken drumettes</li>
+<li>1/2 cup flour</li>
+<li>1 tablespoon baking powder</li>
+<li>1 tablespoon cornstarch</li>
+<li>2 tablespoons unsalted butter</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>In a medium bowl, combine the paprika, salt, cayenne, fenugreek, ginger, onion powder, cardamom, nutmeg, garlic powder, cloves, cinnamon, and allspice. Mix well.</li>
+<li>Reserve two tablespoons of spice mix and set aside.</li>
+<li>Add the chicken drumettes to the bowl with the remaining spice mixture and toss to coat evenly. Marinate in the fridge at least 30 minutes, up to overnight.</li>
+<li>In a small bowl, combine the flour, baking powder, and cornstarch. Sprinkle the flour mixture over the marinated chicken. Toss until well-coated.</li>
+<li>Preheat the oven to 425 degrees F (220 degrees C).</li>
+<li>Place the chicken on a wire rack set over a parchment paper-lined baking sheet. Bake for 30-40 minutes or until chicken is slightly browned.</li>
+<li>In a small saucepan, melt the butter. Once melted, add the reserved 2 tablespoons spice mix and stir to combine.</li>
+<li>Drizzle the spice butter mixture over the drumettes and serve.</li>
+</ol>
+<h2>Notes</h2>
+<p>Yields 4 servings. Total time about 85 minutes (not including marinating time).</p></template>
+
+<template id="recipe-1"><h1>Blooming Onion and Dipping Sauce</h1>
+<p><strong>Source:</strong> http://allrecipes.com/recipe/blooming-onion-and-dipping-sauce/detail.aspx
+<strong>Date saved:</strong> 2012-09-02</p>
+<h2>Ingredients</h2>
+<h3>Dipping Sauce</h3>
+<ul>
+<li>1/2 cup mayonnaise</li>
+<li>2 tablespoons cream-style horseradish sauce</li>
+<li>1 tablespoon ketchup</li>
+<li>1/3 teaspoon paprika</li>
+<li>1/3 teaspoon cayenne pepper</li>
+<li>1/4 teaspoon salt</li>
+<li>1/8 teaspoon dried oregano</li>
+<li>1 pinch ground black pepper</li>
+</ul>
+<h3>Coating</h3>
+<ul>
+<li>1 cup milk</li>
+<li>1 egg</li>
+<li>1 cup all-purpose flour</li>
+<li>1 1/2 teaspoons salt</li>
+<li>1 1/2 teaspoons cayenne pepper</li>
+<li>1 teaspoon paprika</li>
+<li>1/2 teaspoon ground black pepper</li>
+<li>1/3 teaspoon dried oregano</li>
+<li>1/8 teaspoon dried thyme</li>
+<li>1/8 teaspoon ground cumin</li>
+</ul>
+<h3>Other</h3>
+<ul>
+<li>1 large sweet onion</li>
+<li>3/4 cup vegetable oil for frying</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Make sauce: Mix mayonnaise, horseradish, ketchup, paprika, cayenne, salt, oregano, and black pepper together in a medium bowl until well combined. Cover and store in the refrigerator until needed.</li>
+<li>Make coating: Beat milk and egg together in a medium bowl until well combined.</li>
+<li>Mix flour, salt, cayenne pepper, paprika, black pepper, oregano, thyme, and cumin together in a separate bowl. Set both bowls aside.</li>
+<li>Prepare onion: Slice 1 inch off of the top and bottom of onion and remove the papery skin.</li>
+<li>Remove a 1-inch diameter core from middle of onion, leaving the very bottom of the root end intact.</li>
+<li>Use a large, sharp knife to slice down center of onion about 3/4 of the way down; turn onion 90 degrees and slice again.</li>
+<li>Keep slicing each section in half until you have 16 sections, being careful not to cut through bottom of onion.</li>
+<li>Spread "petals" apart. To help keep them separate, you could plunge onion into boiling water for 1 minute and then into cold water to stop the cooking.</li>
+<li>Dip onion into milk mixture and then coat well with seasoned flour mixture, separating the petals and sprinkling the flour mixture between them.</li>
+<li>Dip onion back into milk mixture, then coat with flour mixture again to ensure all pieces are well coated.</li>
+<li>Heat oil in a deep fryer or deep pot to 350 degrees F (175 degrees C). Make sure you use enough oil to completely cover the onion when it fries. Lower onion, cut-side up, into the hot oil and fry until golden brown, about 10 minutes.</li>
+<li>Drain on a rack or on paper towels.</li>
+<li>Open center of onion wide enough to fit the bowl of dipping sauce and serve.</li>
+</ol>
+<h2>Notes</h2>
+<p>Yields 6 servings. Total time about 45 minutes.</p></template>
+
+<template id="recipe-2"><h1>Dot's Pretzels Seasoning</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2025-12-30</p>
+<h2>Ingredients</h2>
+<h3>Seasoning Mix</h3>
+<ul>
+<li>1/2 teaspoon lemon pepper</li>
+<li>1 teaspoon kosher salt</li>
+<li>1 oz package buttermilk ranch dressing mix (or 2 tablespoons)</li>
+<li>1/2 teaspoon dried dill weed</li>
+<li>1 teaspoon garlic powder</li>
+<li>1/4 teaspoon cayenne pepper</li>
+</ul>
+<h3>Other</h3>
+<ul>
+<li>2 bags butter braid pretzels (each 10 oz bags)</li>
+<li>1/2 cup canola oil or unsalted butter</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine all seasoning mix ingredients in a bowl and stir to blend.</li>
+<li>Toss pretzels with canola oil or melted butter until evenly coated.</li>
+<li>Sprinkle seasoning mix over pretzels and toss until evenly distributed.</li>
+</ol></template>
+
+<template id="recipe-3"><h1>Honey BBQ Wings (Baked)</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2016-04-16</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 cup flour</li>
+<li>1 teaspoon chili powder</li>
+<li>1 teaspoon kosher salt</li>
+<li>1 teaspoon freshly ground black pepper</li>
+<li>1 teaspoon paprika</li>
+<li>1 teaspoon garlic powder</li>
+<li>20 chicken wings or drumettes</li>
+<li>1 cup BBQ sauce</li>
+<li>1/2 cup honey</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Preheat oven to 425 degrees F.</li>
+<li>In a bowl, combine flour, chili powder, salt, pepper, paprika, and garlic powder. Coat the wings in the flour evenly, shaking off any excess.</li>
+<li>Place the floured wings on a parchment paper-lined baking sheet and spread them out in a single layer. Bake for 45 minutes, flipping halfway, until skin is crispy and golden brown.</li>
+<li>Preheat oven to 500 degrees F.</li>
+<li>In a separate bowl, combine the BBQ sauce and the honey. Stir the cooked wings in the sauce and coat them evenly.</li>
+<li>Place the coated wings back onto the baking sheet and spread them in a single layer. Bake for 8 to 10 minutes until sauce is bubbly and caramelized.</li>
+<li>Cool, then serve.</li>
+</ol></template>
+
+<template id="recipe-4"><h1>Hummus Recipe Varieties</h1>
+<p><strong>Source:</strong> image (OCR)
+<strong>Date saved:</strong> 2014-10-01</p>
+<h2>Classic Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup tahini</li>
+<li>2 tablespoons olive oil</li>
+<li>2 tablespoons lemon juice</li>
+<li>1 clove garlic</li>
+</ul>
+<h2>Edamame Hummus</h2>
+<ul>
+<li>1 3/4 cups cooked shelled edamame</li>
+<li>1/3 cup tahini</li>
+<li>2 tablespoons olive oil</li>
+<li>2 tablespoons lemon juice</li>
+<li>1 clove garlic</li>
+</ul>
+<h2>Greek Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/2 cup crumbled feta cheese</li>
+<li>1 cup baby spinach</li>
+<li>2 tablespoons lemon juice</li>
+<li>1/8 teaspoon cinnamon</li>
+</ul>
+<h2>Green Herb Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/2 cup basil leaves</li>
+<li>1/2 cup parsley leaves</li>
+<li>1/4 cup fresh tarragon</li>
+<li>2 tablespoons olive oil</li>
+</ul>
+<h2>Guacamole Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1 ripe avocado</li>
+<li>1 jalapeno</li>
+<li>1/4 cup cilantro leaves</li>
+<li>2 tablespoons lime juice</li>
+</ul>
+<h2>Italian Hummus</h2>
+<ul>
+<li>1 can cannellini beans</li>
+<li>1/4 cup sundried tomatoes</li>
+<li>2 tablespoons olive oil</li>
+<li>2 tablespoons lemon juice</li>
+<li>1 teaspoon dried oregano</li>
+</ul>
+<h2>Cheater's Classic Hummus (Peanut Butter)</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup creamy peanut butter</li>
+<li>2 tablespoons olive oil</li>
+<li>2 tablespoons lemon juice</li>
+<li>1 clove garlic</li>
+</ul>
+<h2>Pesto Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup tahini</li>
+<li>2 tablespoons prepared pesto</li>
+<li>2 tablespoons lemon juice</li>
+<li>1 tablespoon grated Parmesan cheese</li>
+</ul>
+<h2>Ranch Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup Greek yogurt</li>
+<li>1 teaspoon dried parsley</li>
+<li>1/2 teaspoon garlic salt</li>
+<li>1 teaspoon dried dill</li>
+</ul>
+<h2>Southwestern Hummus</h2>
+<ul>
+<li>1 can black beans</li>
+<li>1 chipotle pepper</li>
+<li>2 tablespoons lime juice</li>
+<li>1/4 cup cilantro leaves</li>
+<li>1 teaspoon cumin</li>
+</ul>
+<h2>Tapenade Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup pitted black olives</li>
+<li>1 chopped roasted red pepper</li>
+<li>2 tablespoons lemon juice</li>
+<li>1/4 cup parsley leaves</li>
+</ul>
+<h2>Tunisian Hummus</h2>
+<ul>
+<li>1 can chickpeas</li>
+<li>1/3 cup tahini</li>
+<li>2 tablespoons harissa paste</li>
+<li>2 tablespoons lemon juice</li>
+<li>1/4 teaspoon lemon zest</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine all ingredients for your chosen variety in a food processor.</li>
+<li>Blend until smooth, scraping down the sides as needed.</li>
+<li>Season with salt to taste.</li>
+</ol>
+<h2>Notes</h2>
+<p>Each variety follows the same basic method: blend all ingredients in a food processor until smooth. Adjust seasoning to taste.</p></template>
+
+<template id="recipe-6"><h1>Spinach Artichoke Dip with Green Chiles</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2026-01-07</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 (10 oz) package frozen spinach, thawed and well-drained (or about 3 cups fresh spinach, cooked and chopped)</li>
+<li>1 (14 oz) can artichoke hearts, drained and roughly chopped</li>
+<li>8 oz cream cheese, softened</li>
+<li>1/2 cup sour cream (or mayonnaise if you prefer)</li>
+<li>1 cup shredded mozzarella cheese</li>
+<li>1/2 cup grated Parmesan cheese</li>
+<li>2-3 cloves garlic, minced</li>
+<li>1/2 teaspoon salt (adjust to taste)</li>
+<li>1/4 teaspoon black pepper</li>
+<li>1/4 to 1/2 cup chopped green chiles (depending on your spice preference)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Preheat your oven to 375 degrees F (190 degrees C).</li>
+<li>In a large bowl, combine the softened cream cheese, sour cream (or mayo), minced garlic, salt, and pepper until smooth.</li>
+<li>Stir in the chopped spinach, artichoke hearts, green chiles, and both cheeses (mozzarella and Parmesan). Mix everything until evenly combined.</li>
+<li>Transfer the mixture to an oven-safe baking dish. Spread it out evenly. If you like, sprinkle a little extra cheese on top for a golden finish.</li>
+<li>Bake for about 20-25 minutes or until the dip is hot and bubbly and slightly golden on top.</li>
+<li>Serve warm with your favorite dippers -- chips, bread, or veggies.</li>
+</ol></template>
+
+<template id="recipe-7"><h1>Texas Caviar with Avocado</h1>
+<p><strong>Source:</strong> Allrecipes.com
+<strong>Date saved:</strong> 2014-09-05</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 (15.5 ounce) can black-eyed peas, drained and rinsed</li>
+<li>1 tomato, chopped</li>
+<li>1/2 medium sweet onion, chopped</li>
+<li>1/4 cup chopped jalapeno peppers</li>
+<li>4 fluid ounces Italian dressing</li>
+<li>Cayenne pepper to taste</li>
+<li>1 avocado, peeled, pitted, and chopped</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>In a large bowl, mix black-eyed peas, tomatoes, sweet onion, jalapeno peppers, Italian dressing, and cayenne pepper.</li>
+<li>Stir in the avocados just before serving.</li>
+</ol>
+<h2>Notes</h2>
+<p>Prep 15 minutes. Ready in 15 minutes. Makes 16 servings.</p></template>
+
+<template id="recipe-5"><h1>The Best Oven-Fried Buffalo Wings</h1>
+<p><strong>Source:</strong> http://www.seriouseats.com/videos/recipes/how-to-make-baked-buffalo-wings-as-good-as-fried-ones-5300380705001
+<strong>Date saved:</strong> 2017-02-03</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 to 4 pounds (450g to 1.7kg) chicken wings, cut into drumettes and flats</li>
+<li>1 teaspoon (5g) baking powder per pound of chicken wings</li>
+<li>1 teaspoon (5g) kosher salt per pound of chicken wings</li>
+<li>2 tablespoons (1 ounce; 25g) unsalted butter per pound of chicken wings</li>
+<li>2 tablespoons (1 ounce; 30ml) Frank's RedHot Sauce per pound of chicken wings</li>
+<li>Blue cheese dressing, for serving</li>
+<li>Celery sticks, for serving</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Line a rimmed baking sheet with aluminum foil and set a wire rack inside. Carefully dry chicken wings with paper towels.</li>
+<li>In a large bowl, combine wings with baking powder and salt and toss until thoroughly and evenly coated. Place on rack, leaving a slight space between each wing.</li>
+<li>Place baking sheet with wings in refrigerator and allow to rest, uncovered, at least 8 hours and up to 24 hours.</li>
+<li>Adjust oven rack to upper-middle position and preheat oven to 450 degrees F (230 degrees C).</li>
+<li>Add chicken wings and cook for 20 minutes. Flip wings and continue to cook until crisp and golden brown, 15 to 30 minutes longer, flipping a few more times towards the end.</li>
+<li>Meanwhile, combine butter and hot sauce in a small saucepan and cook over medium heat, whisking until combined.</li>
+<li>Transfer wings to a large bowl, add sauce, and toss to thoroughly coat.</li>
+<li>Serve wings immediately with blue cheese dressing and celery sticks.</li>
+</ol>
+<h2>Notes</h2>
+<p>Yields 2 servings. Total time about 20 hours (including overnight refrigeration). The baking powder and overnight rest are the key to crispy skin without frying.</p></template>
+
+
+
+<template id="recipe-45"><h1>Gumbo</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2026-02-01</p>
+<h2>Ingredients</h2>
+<p><strong>Cajun Spice Blend:</strong>
+- 2-3 tbsp smoked paprika
+- 2 tbsp garlic powder
+- 1 tbsp onion powder
+- 1 tbsp black pepper
+- 1 tsp to 1 tbsp cayenne pepper (adjust based on heat tolerance)
+- 1 tbsp dried oregano
+- 1 tbsp dried thyme
+- 1 tsp red pepper flakes</p>
+<p><strong>Proteins:</strong>
+- 1 lb Andouille sausage, sliced
+- 1.5 lbs large shrimp, peeled and deveined</p>
+<p><strong>The "Holy Trinity":</strong>
+- 1 large onion, diced
+- 2 bell peppers, diced
+- 3-4 stalks celery, diced</p>
+<p><strong>The Roux:</strong>
+- 1 cup vegetable oil (or lard)
+- 1 cup all-purpose flour</p>
+<p><strong>Liquid and Flavor:</strong>
+- 6-8 cups seafood or chicken stock
+- 4 cloves garlic
+- 2 bay leaves
+- Cajun/Creole seasoning, thyme, cayenne, salt, and black pepper</p>
+<p><strong>The Finish:</strong>
+- Green onions
+- Fresh parsley
+- Cooked white rice</p>
+<h2>Instructions</h2>
+<ol>
+<li><strong>Brown the Sausage:</strong> In a heavy Dutch oven, brown your sliced Andouille over medium heat. This renders the fat and builds a flavor base. Remove the sausage and set it aside, leaving the fat in the pot.</li>
+<li><strong>The Roux (The Most Important Part):</strong> Add your oil to the pot, then whisk in the flour. Lower the heat and stir <em>constantly</em>. You are looking for a color that matches an old copper penny or dark chocolate. This can take 20-30 minutes. If you see black specks, it's burnt -- throw it out and start over.</li>
+<li><strong>Saute the Trinity:</strong> Once the roux is dark, carefully stir in your onion, peppers, and celery. The moisture from the veggies will stop the roux from cooking further. Cook until softened (about 5 minutes), then add the garlic.</li>
+<li><strong>Simmer:</strong> Slowly whisk in your stock to avoid lumps. Add the browned sausage, bay leaves, and seasonings. Bring to a boil, then reduce to a low simmer. Let it cook for at least 45 minutes to 1 hour. This develops the depth gumbo is known for.</li>
+<li><strong>The Seafood Finish:</strong> About 5-10 minutes before you're ready to serve, drop in the shrimp. They only need a few minutes to turn pink and opaque. Overcooking them makes them rubbery!</li>
+<li><strong>Serve:</strong> Ladle it over a scoop of white rice. Top with plenty of green onions and parsley.</li>
+</ol>
+<h2>Notes</h2>
+<p>None.</p></template>
+
+<template id="recipe-46"><h1>Korean Chicken Porridge (Dak Juk)</h1>
+<p><strong>Source:</strong> http://www.foodista.com/recipe/B33NNHB6/korean-dak-juk-chicken-porridge
+<strong>Date saved:</strong> 2012-09-11</p>
+<h2>Ingredients</h2>
+<ul>
+<li>4-5 pieces (1 lb) boneless chicken breasts</li>
+<li>5-6 garlic cloves, minced</li>
+<li>1/2 zucchini, cut into small cubes</li>
+<li>1 carrot, cut into small cubes</li>
+<li>8-9 cups of water</li>
+<li>3 cups jjapsahl (Korean sweet rice)</li>
+<li>1 tbsp salt</li>
+<li>Soy sauce to taste</li>
+<li>Sliced scallions (garnish)</li>
+<li>Sesame oil (for taste and garnish)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Prepare all ingredients as listed above.</li>
+<li>Cook according to the Foodista recipe directions.</li>
+</ol>
+<h2>Notes</h2>
+<p>Original email was a shopping list note with ingredients only. No cooking instructions were included in the source.</p></template>
+
+<template id="recipe-47"><h1>Vietnamese Pho</h1>
+<p><strong>Source:</strong> image (OCR)
+<strong>Date saved:</strong> 2011-11-15</p>
+<h2>Ingredients</h2>
+<p><strong>Broth:</strong>
+- 2-3 lbs beef marrow bones
+- 1.5-2 lbs brisket
+- 1 onion
+- Fist-sized piece of ginger root
+- 1 head garlic
+- 2 inches yellow rock sugar
+- 1 tbsp Vietnamese fish sauce
+- 1 tbsp salt</p>
+<p><strong>Spices (for mesh ball):</strong>
+- 2 cinnamon sticks
+- 1-4 tbsp coriander
+- 1-4 tbsp fennel seed
+- 5 whole star anise
+- 5 cardamom pods
+- 10 whole cloves</p>
+<p><strong>Noodles and Meat:</strong>
+- 1 lb oriental rice noodles
+- 1 package beef tendon balls
+- 1 package eye of round, thinly sliced, served rare</p>
+<p><strong>Garnish:</strong>
+- 1/2 onion
+- 1 bag bean sprouts
+- 1 bunch green onions
+- 1 bunch cilantro
+- Jalapeno
+- Lime
+- Hoisin
+- Sriracha
+- Thai basil (not regular basil)</p>
+<h2>Instructions</h2>
+<ol>
+<li>Broil marrow bones and brisket covered in oil in the oven on the highest setting. Add fish sauce, rock sugar, and salt to the pot.</li>
+<li>Place star anise, cardamom, coriander, fennel seed, cloves, and cinnamon sticks into a mesh spice ball. Add to the broth. Occasionally stir gently.</li>
+<li>Let meat rest once cool enough to handle. Place in the freezer for 30 minutes -- freezing it a bit helps so you can slice it super thin. Cut off any fat if you prefer.</li>
+<li>Let the broth simmer. The fat will rise up and might even be thick enough to rest a spoon on it.</li>
+<li>Cook rice noodles according to package directions.</li>
+<li>Place noodles in bowls, top with thinly sliced raw eye of round and beef tendon balls. Pour hot broth over (the hot broth will cook the rare meat).</li>
+<li>Add garnishes: bean sprouts, green onions, cilantro, jalapeno, lime, hoisin, and sriracha to taste.</li>
+</ol>
+<h2>Notes</h2>
+<p>Extracted via OCR from an infographic-style image. Recommend buying spices in bulk online. Remaining broth can be frozen in flat containers for another time.</p></template>
+
+<template id="recipe-48"><h1>White Chicken Lasagna Soup</h1>
+<p><strong>Source:</strong> http://12tomatoes.com/chicken-lasagna-soup/
+<strong>Date saved:</strong> 2017-01-03</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 pound boneless, skinless chicken breasts, cubed, cooked</li>
+<li>10 lasagna noodles, broken into small pieces</li>
+<li>7 cups low-sodium chicken broth, divided</li>
+<li>1 (15 oz.) can cannellini beans, rinsed and drained</li>
+<li>1 (10 oz.) package frozen baby spinach, thawed</li>
+<li>1 1/2 cups heavy cream</li>
+<li>1/4 cup all-purpose flour</li>
+<li>1/4 cup cornstarch</li>
+<li>4 cloves garlic, minced</li>
+<li>2 carrots, peeled and finely chopped</li>
+<li>2 bay leaves</li>
+<li>1 medium yellow onion, finely chopped</li>
+<li>2 tablespoons olive oil, divided</li>
+<li>1 tablespoon Italian seasoning</li>
+<li>Kosher salt and freshly ground pepper, to taste</li>
+<li>Parmesan cheese, grated, to taste</li>
+<li>Ricotta, optional</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Heat 2 tablespoons olive oil in a large stockpot or Dutch oven over medium-high heat and saute onion and carrot until softened, 10-12 minutes.</li>
+<li>Add garlic and cook for 1 minute, or until fragrant, then sprinkle in flour and stir together for 2-3 minutes, or until flour has a chance to cook. Mixture will be thick.</li>
+<li>Slowly pour in 6 cups chicken broth, saving the last 1 cup to mix the cornstarch into. Pour cornstarch mixture in as well, stirring everything to combine.</li>
+<li>Add chicken, beans, lasagna noodles, bay leaves and Italian seasoning to soup, then season generously with salt and pepper.</li>
+<li>Bring mixture up to a boil, then reduce heat to low and let simmer for 20 minutes, or until noodles are al dente.</li>
+<li>Remove and discard bay leaves, then stir thawed spinach into the soup. Pour in heavy cream and cook for another 5-10 minutes, or until warmed through.</li>
+<li>Add grated parmesan, then transfer to serving bowls and enjoy!</li>
+</ol>
+<h2>Notes</h2>
+<p>Serves 6-8. Total time approximately 40 minutes.</p></template>
+
+
+
+<template id="recipe-38"><h1>Chicken Salad</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2013-02-01</p>
+<h2>Ingredients</h2>
+<ul>
+<li>2 roasted chickens (breast meat only)</li>
+<li>1/2 cup golden raisins (options: red currants, regular raisins)</li>
+<li>1 cup roasted pecans (pop in oven for 5 mins, break apart)</li>
+<li>1/4 cup onion, red (options: green onions or any you like)</li>
+<li>1/2 cup Miracle Whip (add more to your texture preference)</li>
+<li>1 tablespoon mustard (adjust to taste)</li>
+<li>Seasoning salt to taste</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Shred or chop the breast meat from 2 roasted chickens.</li>
+<li>Roast pecans in the oven for 5 minutes, then break apart.</li>
+<li>Combine chicken, golden raisins, roasted pecans, and chopped onion in a large bowl.</li>
+<li>Add Miracle Whip starting with 1/2 cup and mustard starting with 1 tablespoon. Mix well and adjust amounts to your preference.</li>
+<li>Season with seasoning salt to taste.</li>
+<li>Serve on any bread you prefer, or with crackers.</li>
+</ol>
+<h2>Notes</h2>
+<p>You can change nuts and fruits to make different kinds of chicken salads. Optional additions: Swiss or white American cheese, lettuce, and a tomato slice.</p></template>
+
+<template id="recipe-39"><h1>Coleslaw</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2017-01-20</p>
+<h2>Ingredients</h2>
+<p><strong>For the Dressing:</strong>
+- 1 cup apple cider vinegar
+- 1 cup sugar
+- 3 tablespoons extra-virgin olive oil
+- 1 teaspoon finely minced garlic (about 1 medium clove)
+- 1 teaspoon freshly ground black pepper
+- 1 teaspoon celery seeds</p>
+<p><strong>For the Slaw:</strong>
+- 1 large head green cabbage (about 3 1/2 pounds), finely shredded on a mandoline or by hand
+- 1 large carrot, peeled and grated on the large holes of a box grater
+- 1 medium yellow onion, finely sliced on a mandoline or by hand
+- 2/3 cup sugar
+- 1/3 cup kosher salt</p>
+<h2>Instructions</h2>
+<ol>
+<li><strong>For the Dressing:</strong> Whisk together vinegar, sugar, oil, garlic, black pepper, and celery seeds in a small bowl.</li>
+<li><strong>For the Slaw:</strong> Combine cabbage, carrot, and onion in a large bowl. Sprinkle with sugar and salt and toss to combine. Let stand five minutes, then transfer to a large colander and rinse thoroughly under cold running water.</li>
+<li>Transfer vegetables to a salad spinner and spin dry. Alternatively, transfer to a large rimmed baking sheet lined with a triple layer of paper towels or a clean kitchen towel and blot mixture dry with more towels. Return to large bowl.</li>
+<li>Pour dressing over vegetables and toss to coat. Adjust seasoning to taste with salt, pepper, and/or sugar.</li>
+</ol>
+<h2>Notes</h2>
+<p>None.</p></template>
+
+<template id="recipe-40"><h1>Quinoa Shrimp Salad</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2025-01-22</p>
+<h2>Ingredients</h2>
+<ul>
+<li>Quinoa</li>
+<li>Shrimp (cooked with butter, lemon, and ginger)</li>
+<li>Avocado</li>
+<li>Cucumber</li>
+<li>Tomato</li>
+<li>Cilantro</li>
+<li>Olive oil</li>
+<li>Soy sauce</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Cook quinoa according to package directions and let cool.</li>
+<li>Cook shrimp with butter, lemon, and ginger.</li>
+<li>Dice avocado, cucumber, and tomato.</li>
+<li>Combine quinoa, shrimp, avocado, cucumber, tomato, and cilantro.</li>
+<li>Dress with olive oil and soy sauce.</li>
+</ol>
+<h2>Notes</h2>
+<p>Original email was a brief ingredient list only. Instructions above are inferred from the ingredients. No quantities were specified.</p></template>
+
+<template id="recipe-41"><h1>Red Potato Salad</h1>
+<p><strong>Source:</strong> http://allrecipes.com/Recipe/Red-Skinned-Potato-Salad/Detail.aspx
+<strong>Date saved:</strong> 2014-05-22</p>
+<h2>Ingredients</h2>
+<ul>
+<li>2 pounds clean, scrubbed new red potatoes</li>
+<li>6 large eggs</li>
+<li>1 pound bacon</li>
+<li>1 onion, finely chopped</li>
+<li>1 stalk celery, finely chopped</li>
+<li>2 cups mayonnaise</li>
+<li>Salt and pepper to taste</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Bring a large pot of salted water to a boil. Add potatoes and cook until tender but still firm, about 15 minutes. Drain and allow to cool.</li>
+<li>Place eggs in a saucepan and cover with cold water. Bring water to a boil and immediately remove from heat. Cover and let eggs stand in hot water for 10 to 12 minutes. Remove eggs from hot water; cool in ice water. Peel, then chop into small, bite-sized pieces.</li>
+<li>Place bacon in a large skillet and cook over medium-high heat, turning occasionally, until evenly browned, about 10 minutes. Drain bacon slices on paper towels, then crumble.</li>
+<li>Chop cooled potatoes, leaving skin on. Add to a large bowl, along with eggs, bacon, onion, and celery. Stir in mayonnaise, salt, and pepper. Chill in the refrigerator for 1 hour before serving.</li>
+</ol>
+<h2>Notes</h2>
+<p>Serves 12. Total time approximately 115 minutes.</p></template>
+
+
+
+<template id="recipe-44"><h1>Homemade Vermicelli Noodles</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2024-06-18</p>
+<h2>Ingredients</h2>
+<p><strong>Rice Dough Starter:</strong>
+- 2 cups rice flour
+- 7 cups water
+- 1 tbsp oil</p>
+<p><strong>Dry Ingredients:</strong>
+- 4 cups rice flour (1 16oz bag)
+- 4 cups tapioca flour (1 16oz bag)
+- 1 tbsp xanthan gum
+- 2 tsp salt</p>
+<h2>Instructions</h2>
+<p><strong>Rice Dough Starter:</strong>
+1. In a pot, add 2 cups rice flour, 7 cups water, and 1 tbsp oil.
+2. Whisk together, then set on medium to high heat and cook. Stir as you cook to prevent scorching and rice lumps.
+3. Stir until it becomes a nice thick but also slimy texture (until it comes to a boil and bubbles are popping up). Set aside for 20 minutes to cool off.</p>
+<p><strong>Dry Ingredients:</strong>
+4. In a bowl, add 4 cups rice flour, 4 cups tapioca flour, xanthan gum, and salt. Whisk all together.
+5. After 20-30 minutes, once the rice starter has cooled down, add it to the dry ingredients. Mix until the dry absorbs most of the wet, then switch to a hand mixer or any mixer of your choice. Mix until the batter becomes nice and shiny.</p>
+<p><strong>Cooking Setup:</strong>
+Batter ---&gt; Boiled Water ---&gt; Bowl of Cold Water ---&gt; Another Bowl of Cold Water ---&gt; Strainer</p>
+<p><strong>Cooking the Noodles:</strong>
+6. Scoop the batter into your noodle press. Once the water boils, squeeze the batter into the water. (Keep an eye on the water after you take out the noodles. The water will rise up if you keep it on high boil! Keep it low until you do another batch, then put it back up to high for a boil.)
+7. Once the noodles rise to the surface, take a noodle strainer and scoop out the noodles.
+8. Rinse in the first bowl of cold water, and again in the second bowl.
+9. Grab small bundles of noodle at a time and put them in your strainer bowl.
+10. Keep repeating until you use up all your batter.</p>
+<h2>Notes</h2>
+<p>None.</p></template>
+
+
+
+<template id="recipe-37"><h1>3-Ingredient Stovetop Mac and Cheese</h1>
+<p><strong>Source:</strong> http://www.seriouseats.com/2017/01/the-food-lab-3-ingredient-fast-easy-stovetop-macaroni-and-cheese.html
+<strong>Date saved:</strong> 2017-01-20</p>
+<h2>Ingredients</h2>
+<ul>
+<li>6 ounces (170g) elbow macaroni</li>
+<li>Salt</li>
+<li>6 ounces (180ml) evaporated milk</li>
+<li>6 ounces (170g) grated mild or medium cheddar cheese, or any good melting cheese, such as Fontina, Gruyere, or Jack</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Place macaroni in a medium saucepan or skillet and add just enough cold water to cover. Add a pinch of salt and bring to a boil over high heat, stirring frequently. Continue to cook, stirring, until water has been almost completely absorbed and macaroni is just shy of al dente, about 6 minutes.</li>
+<li>Immediately add evaporated milk and bring to a boil. Add cheese. Reduce heat to low and cook, stirring continuously, until cheese is melted and liquid has reduced to a creamy sauce, about 2 minutes longer. Season to taste with more salt and serve immediately.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Yields 2 servings. Total time: 15 minutes.</li>
+</ul></template>
+
+<template id="recipe-24"><h1>Avocado Pasta</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2016-04-11</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 avocado</li>
+<li>Juice of 1 lemon (reserve zest)</li>
+<li>1-2 cloves garlic</li>
+<li>1 handful basil</li>
+<li>2 green onions</li>
+<li>1/4 tsp each salt and pepper (more or less to taste)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Blend or process the avocado, lemon juice, garlic, basil, green onions, salt, and pepper into a sauce.</li>
+<li>Toss with cooked pasta and garnish with reserved lemon zest.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>The original recipe listed only ingredients; instructions inferred from context.</li>
+</ul></template>
+
+<template id="recipe-25"><h1>Balsamic Slow Cooker Roast Beef</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2014-12-28</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 (3-4 pound) boneless roast beef (chuck or round roast)</li>
+<li>1 cup beef broth</li>
+<li>1/2 cup balsamic vinegar</li>
+<li>1 tablespoon Worcestershire sauce</li>
+<li>1 tablespoon soy sauce</li>
+<li>1 tablespoon honey</li>
+<li>1/2 teaspoon red pepper flakes</li>
+<li>4 cloves garlic, chopped</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Place all ingredients in slow cooker.</li>
+<li>Cook on low for 8-10 hours.</li>
+</ol></template>
+
+<template id="recipe-26"><h1>Cabernet-Cherry Filet Mignon</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2014-10-01</p>
+<h2>Ingredients</h2>
+<ul>
+<li>4 (4 to 5 ounce) 1-inch thick filet mignon (beef tenderloin)</li>
+<li>Olive oil</li>
+<li>2 cloves garlic, minced</li>
+<li>1 1/2 cups Cabernet Sauvignon or burgundy wine</li>
+<li>3 tablespoons good-quality balsamic vinegar</li>
+<li>4 whole cloves</li>
+<li>8 whole peppercorns</li>
+<li>1 bay leaf, torn into small pieces</li>
+<li>1/2 pound fresh Bing cherries, rinsed</li>
+<li>Coarse salt and freshly-ground black pepper to taste</li>
+<li>1 to 2 teaspoons granulated sugar (optional)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Bring steaks to room temperature. Coat steaks lightly with olive oil. Rub minced garlic evenly over the steak (press in with your hands); set aside until ready to cook.</li>
+<li>Do not salt your steaks before cooking. Salt brings moisture to the surface and you will essentially steam the steak. Salt after the steak is cooked to your liking, has rested, and just before serving.</li>
+<li>In a large saucepan over medium-high heat, bring the wine and balsamic vinegar to a boil. Tie the cloves, peppercorns, and bay leaf in a bundle with a small piece of cheesecloth. Add the spice bundle to the wine mixture; continue boiling approximately 15 minutes or until mixture is reduced to 1/2 cup.</li>
+<li>While the wine mixture is reducing, pit the cherries. Cut the cherries into quarters and add to the wine mixture. Cover and cook approximately 10 minutes or until the cherries are tender. Season with salt and pepper. Add the sugar to balance the flavors, if needed. Remove the spice bundle from the sauce and discard. Reduce heat to low to keep Cabernet-Cherry Sauce warm until steaks are cooked.</li>
+<li>Using pan-searing or sear-roasting technique, cook your steak to your desired doneness. The steak is done when the internal temperature registers on an instant-read meat thermometer:</li>
+<li>Rare: 120 degrees F</li>
+<li>Medium Rare: 125 degrees F</li>
+<li>Medium: 130 degrees F</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Yields 4 servings. Prep time: 5 min. Cook time: 15 min.</li>
+<li>When buying steaks, buy the best grade of meat you can afford. Look for steaks with fine texture and firm to the touch. The color should be a light cherry red, not deep red. Also look for marbling, as the thin threads of fat running through the meat give wonderful flavor.</li>
+</ul></template>
+
+<template id="recipe-28"><h1>Chicken and Goat Cheese Pasta</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2023-01-07</p>
+<h2>Ingredients</h2>
+<ul>
+<li>8 oz pasta of your choice</li>
+<li>1 lb chicken breast, cut into bite-size pieces</li>
+<li>1 tbsp olive oil</li>
+<li>1 bell pepper, diced</li>
+<li>1 onion, diced</li>
+<li>8 oz mushrooms, sliced</li>
+<li>4 oz goat cheese, crumbled</li>
+<li>1 cup tomato-based pasta sauce (or cream-based sauce)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Cook the pasta according to the package instructions. Drain and set aside.</li>
+<li>Heat the olive oil in a large pan over medium heat. Add the chicken and cook until browned on all sides and cooked through. Remove the chicken from the pan and set aside.</li>
+<li>In the same pan, add the bell pepper, onion, and mushrooms. Saute until the vegetables are tender.</li>
+<li>Add the cooked pasta, chicken, and goat cheese to the pan with the vegetables. Stir to combine.</li>
+<li>Pour the pasta sauce over the pasta mixture and stir until everything is well coated.</li>
+<li>Serve hot, garnished with additional crumbled goat cheese if desired.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Recipe generated via ChatGPT.</li>
+</ul></template>
+
+<template id="recipe-27"><h1>Chicken Cordon Bleu</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2018-02-19</p>
+<h2>Ingredients</h2>
+<h3>Chicken</h3>
+<ul>
+<li>4 boneless, skinless chicken breasts</li>
+<li>Salt, to taste</li>
+<li>Pepper, to taste</li>
+<li>1 tablespoon garlic powder</li>
+<li>1 tablespoon onion powder</li>
+<li>16 slices Swiss cheese</li>
+<li>1/2 lb ham, sliced</li>
+<li>1 cup flour</li>
+<li>4 eggs</li>
+<li>2 cups panko breadcrumbs</li>
+</ul>
+<h3>Creamy Dijon Sauce</h3>
+<ul>
+<li>3 tablespoons butter</li>
+<li>2 cloves garlic, minced</li>
+<li>3 tablespoons flour</li>
+<li>2 cups milk</li>
+<li>1/4 cup Dijon mustard</li>
+<li>1 cup shredded Parmesan cheese</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Sprinkle the chicken breasts with salt, pepper, garlic powder, and onion powder, tossing to coat evenly.</li>
+<li>On a cutting board, place a chicken breast between two sheets of plastic wrap and pound until about 1/2 inch (1 cm) thick with a meat mallet, rolling pin, or heavy pan.</li>
+<li>Remove the plastic wrap and place a layer of Swiss cheese, then ham, then one more layer of Swiss cheese.</li>
+<li>Evenly roll the chicken, and place onto a new sheet of plastic wrap.</li>
+<li>Wrap the chicken in the plastic wrap, twist the excess plastic, and roll the chicken while twisting the sides in to tighten and firm up the roll of chicken cordon bleu. Tie the excess and chill in the fridge to set for 30 minutes.</li>
+<li>After the rolls are set, prepare large, wide dishes with flour, beaten egg, and breadcrumbs.</li>
+<li>Dredge the chicken in the flour, egg, and then breadcrumbs.</li>
+<li>Place the breaded chicken cordon bleu in a 325 degrees F (170 degrees C) pot of oil, and cook about 5 minutes per side or until the outside is an even golden brown. If a good color is achieved and the chicken's center is still not 165 degrees F (74 degrees C), you can finish the chicken in an oven at 325 degrees F (170 degrees C) until that temperature is reached.</li>
+<li>For the sauce: In a 1.5-quart saucepan on medium heat, melt the butter and cook the garlic until soft.</li>
+<li>Add in flour, and whisk for 1 minute.</li>
+<li>Add in the milk, and whisk until fully combined with the roux. Continue whisking until the mixture comes to a simmer and has thickened.</li>
+<li>Add in the Dijon mustard, salt, pepper, and Parmesan cheese. Whisk to combine. Set aside.</li>
+<li>Slice chicken and serve drizzled with Dijon sauce.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Serves 6.</li>
+</ul></template>
+
+<template id="recipe-29"><h1>Chickpea Curry</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2016-12-18</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 tbsp turmeric</li>
+<li>1 tbsp cumin</li>
+<li>2 tbsp ground coriander</li>
+<li>2 white onions, chopped</li>
+<li>300g (2 cups) cherry tomatoes</li>
+<li>4 cloves garlic, chopped</li>
+<li>3 tbsp ginger, grated</li>
+<li>2 red chillies, deseeded</li>
+<li>1 tbsp salt</li>
+<li>320 ml (1.5 cups) coconut cream</li>
+<li>4 tbsp tomato puree</li>
+<li>150g (1 cup) red lentils, parboiled</li>
+<li>1 head broccoli, broken into florets</li>
+<li>2 cups water (more if too dry)</li>
+<li>800g (3.5 cups) chickpeas</li>
+<li>Handful coriander (cilantro)</li>
+<li>200g (1 bag) spinach</li>
+</ul>
+<h3>For serving</h3>
+<ul>
+<li>Basmati rice</li>
+<li>Coriander (cilantro)</li>
+<li>Popadoms</li>
+<li>Mango chutney</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Put the white onions, cherry tomatoes, garlic, ginger, and red chillies in a food processor and blend to a puree.</li>
+<li>Fry the spices (turmeric, cumin, ground coriander) in a pan.</li>
+<li>Stir in the puree and add salt to taste.</li>
+<li>Stir in the coconut cream and tomato puree.</li>
+<li>Add the parboiled red lentils.</li>
+<li>Add the broccoli.</li>
+<li>Add some water.</li>
+<li>Stir in the chickpeas.</li>
+<li>Stir in the coriander (cilantro) and spinach.</li>
+<li>Add more water if needed.</li>
+<li>Serve with basmati rice and garnish with broken popadoms and coriander (cilantro).</li>
+</ol></template>
+
+<template id="recipe-30"><h1>Chili Rellenos Casserole</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2014-07-05</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1/2 lb ground beef</li>
+<li>1/4 chopped onion</li>
+<li>10 oz can whole green chilis</li>
+<li>1 bag shredded cheddar (15 oz)</li>
+<li>2 eggs</li>
+<li>3/4 cup milk</li>
+<li>1/8 cup flour</li>
+<li>1 tsp cumin</li>
+<li>1/2 tsp salt</li>
+<li>1/2 tsp pepper</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Preheat oven to 375.</li>
+<li>Cook meat and onion, drain. Add cumin, salt, and pepper.</li>
+<li>Line bottom of pan with whole chilis, save some to chop.</li>
+<li>Layer on hamburger, cheese, and chopped chilis.</li>
+<li>Whisk milk, eggs, and flour. Pour over pan.</li>
+<li>Bake 35-40 minutes.</li>
+</ol></template>
+
+<template id="recipe-31"><h1>Creamy Mac and Cheese</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2012-12-12</p>
+<h2>Ingredients</h2>
+<ul>
+<li>3 tablespoons all purpose flour</li>
+<li>1 tablespoon cornstarch</li>
+<li>Pinch of kosher salt</li>
+<li>Pinch of pepper</li>
+<li>Half a stick of unsalted butter</li>
+<li>1 cup half and half</li>
+<li>12 oz extra sharp cheddar cheese, shredded</li>
+<li>Macaroni noodles, cooked</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine the flour, cornstarch, salt, and pepper with the butter in a pan. Heat and stir, cooking for 4 minutes to make a roux.</li>
+<li>Add 1 cup of half and half to the roux and stir.</li>
+<li>Add half (6 oz) of the shredded cheddar to the sauce.</li>
+<li>Stir and cook for 2 minutes, but don't let it boil, as the cheese and milk will curdle and the sauce will get too thick. If it gets close to boiling, take it off the heat. If it gets too thick, add some extra half and half to thin it out. When the cheese is melted and it's nice and creamy, you're good.</li>
+<li>Put cooked noodles in a bowl. Place the remaining 6 oz of cheese on the noodles. Mix it up.</li>
+<li>Add the sauce. Mix it up.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Not cheesy enough? Add 4 oz of Gruyere cheese.</li>
+<li>Still not cheesy enough? Add 4 oz of Velveeta.</li>
+</ul></template>
+
+<template id="recipe-33"><h1>Halal Cart-Style Chicken and Rice with White Sauce</h1>
+<p><strong>Source:</strong> https://www.seriouseats.com/serious-eats-halal-cart-style-chicken-and-rice-white-sauce-recipe
+<strong>Date saved:</strong> 2021-08-10</p>
+<h2>Ingredients</h2>
+<h3>Chicken</h3>
+<ul>
+<li>2 tablespoons fresh lemon juice</li>
+<li>1 tablespoon chopped fresh oregano</li>
+<li>1/2 teaspoon ground coriander seed</li>
+<li>3 garlic cloves, roughly chopped (about 1 1/2 tablespoons)</li>
+<li>1/4 cup light olive oil</li>
+<li>Kosher salt and freshly ground black pepper</li>
+<li>2 pounds boneless, skinless chicken thighs, trimmed of excess fat (6 to 8 thighs)</li>
+<li>1 tablespoon vegetable or canola oil</li>
+</ul>
+<h3>Rice</h3>
+<ul>
+<li>2 tablespoons unsalted butter</li>
+<li>1/2 teaspoon turmeric</li>
+<li>1/4 teaspoon ground cumin</li>
+<li>1 1/2 cups long-grain or Basmati rice</li>
+<li>2 1/2 cups chicken broth</li>
+<li>Kosher salt and freshly ground black pepper</li>
+</ul>
+<h3>White Sauce</h3>
+<ul>
+<li>1/2 cup mayonnaise</li>
+<li>1/2 cup Greek yogurt</li>
+<li>1 tablespoon sugar</li>
+<li>2 tablespoons white vinegar</li>
+<li>1 teaspoon lemon juice</li>
+<li>1/4 cup chopped fresh parsley</li>
+<li>Kosher salt and freshly ground black pepper</li>
+</ul>
+<h3>For Serving</h3>
+<ul>
+<li>1 head iceberg lettuce, shredded</li>
+<li>1 large tomato, cut into wedges</li>
+<li>Fluffy pocketless pita bread, brushed in butter, lightly toasted, and cut into 1 x 3-inch strips</li>
+<li>Harissa-style hot sauce</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li><strong>Marinate the chicken:</strong> Combine the lemon juice, oregano, coriander, garlic, and olive oil in a blender. Blend until smooth. Season the marinade to taste with kosher salt and black pepper. Place the chicken in a 1-gallon zipper-lock bag and add half of the marinade (reserve the remaining marinade in the refrigerator). Turn the chicken to coat, seal the bag, and marinate in the refrigerator for at least 1 hour and up to 4 hours, turning occasionally.</li>
+<li><strong>Cook the chicken:</strong> Remove the chicken from the bag and pat dry with paper towels. Season with kosher salt and pepper, going heavy on the pepper. Heat the oil in a 12-inch heavy-bottomed cast iron or stainless-steel skillet over medium-high heat until lightly smoking. Add the chicken pieces and cook without disturbing until lightly browned on the first side, about 4 minutes. Flip the chicken, reduce heat to medium, and cook until the center of each thigh registers 165 degrees F on an instant-read thermometer, about 6 minutes longer. Transfer to a cutting board and cool for 5 minutes.</li>
+<li><strong>Chop the chicken:</strong> Roughly chop the chicken into 1/2- to 1/4-inch chunks. Transfer to a medium bowl, add the remaining marinade, cover loosely with plastic, and refrigerate while you cook the rice and prepare the sauce.</li>
+<li><strong>Cook the rice:</strong> Melt the butter over medium heat in a large Dutch oven. Add the turmeric and cumin and cook until fragrant but not browned, about 1 minute. Add the rice and stir to coat. Cook, stirring frequently, until the rice is lightly toasted, about 4 minutes. Add the chicken broth and season to taste with salt and pepper. Raise the heat to high and bring to a boil. Cover, reduce to a simmer, and cook for 15 minutes without disturbing. Remove from heat and allow to rest until the water is completely absorbed and the rice is tender, about 15 minutes.</li>
+<li><strong>Make the sauce:</strong> In a small bowl, combine the mayonnaise, yogurt, sugar, vinegar, lemon juice, parsley, and 2 teaspoons black pepper. Whisk to combine. Season to taste with salt.</li>
+<li><strong>Serve:</strong> Return the entire contents of the chicken bowl (chicken, marinade, and all juices) to the skillet. Cook over medium-high heat, stirring occasionally, until heated through. Divide the rice, lettuce, tomato, and toasted pita bread evenly among four to six plates. Pile the chicken on top of the rice. Top with the white sauce and hot sauce. Serve immediately, passing extra sauce at the table.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Yields 4 servings. Total time: about 5 hours 15 minutes (including marinating).</li>
+</ul></template>
+
+<template id="recipe-34"><h1>Kara's Chili</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2015-03-23</p>
+<h2>Ingredients</h2>
+<ul>
+<li>2 lbs hamburger meat</li>
+<li>Chopped onion</li>
+<li>1 can ranch style beans (with jalapeno for spicy)</li>
+<li>1 can Rotel (mild or spicy)</li>
+<li>1 can tomato sauce (8 oz)</li>
+<li>2 cans of water</li>
+<li>2-3 tablespoons of chili powder</li>
+<li>Salt and pepper to taste</li>
+<li>1 habanero pepper (optional, for extra heat)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Cook hamburger meat with chopped onion. Drain.</li>
+<li>Dump the following into a large pot: ranch style beans, Rotel, tomato sauce, water, and chili powder.</li>
+<li>Add the cooked meat and onion to the pot.</li>
+<li>Cook on low for at least one hour. The longer it simmers the better the flavor.</li>
+<li>Season with salt and pepper to taste.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>For the most spicy heat, cut a habanero pepper in half and stir in the mixture for 10 minutes, then remove the two halves.</li>
+</ul></template>
+
+<template id="recipe-32"><h1>Lighter Fettuccine Alfredo</h1>
+<p><strong>Source:</strong> https://www.seriouseats.com/recipes/2014/09/lighter-fettuccine-alfredo-recipe.html
+<strong>Date saved:</strong> 2020-04-23</p>
+<h2>Ingredients</h2>
+<ul>
+<li>5 ounces (140g) grated Parmigiano Reggiano cheese, plus more for sprinkling</li>
+<li>2 tablespoons (30ml) heavy cream</li>
+<li>1 large egg</li>
+<li>1 teaspoon (3g) cornstarch</li>
+<li>2 tablespoons (30ml) extra-virgin olive oil, plus more for serving</li>
+<li>1/2 teaspoon grated lemon zest (optional)</li>
+<li>Kosher salt and freshly ground black pepper</li>
+<li>1 pound (450g) fresh fettuccine, or 12 ounces (340g) dried fettuccine</li>
+<li>1 teaspoon minced garlic (about 1 medium clove)</li>
+<li>2 tablespoons (30g) unsalted butter</li>
+<li>Minced fresh parsley or chives</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine cheese, heavy cream, egg, cornstarch, olive oil, and lemon zest (if using) in a large bowl. Season lightly with salt and heavily with black pepper and whisk to combine. Set aside.</li>
+<li>Bring a large pot of salted water to a boil over high heat. Add pasta and cook, stirring frequently to prevent sticking, until cooked but still very firm (not quite al dente), about 45 seconds for fresh pasta or 1-2 minutes less than package directions indicate for dried pasta. Drain pasta into a colander set over a large bowl. Transfer 2 cups (480ml) of cooking water to a liquid measuring cup and discard the rest. Transfer pasta to the now-empty bowl. Add garlic and butter and toss to coat.</li>
+<li>Whisking constantly, slowly add 1 1/2 cups of pasta cooking water to bowl with cheese mixture. Transfer cheese mixture to the now-empty pasta cooking pot, scraping the bottom to make sure you get everything. Cook over medium-high heat, stirring constantly with a rubber spatula, until mixture comes to a boil and thickens, about 45 seconds. Season sauce to taste with more salt and pepper as desired. Transfer pasta to sauce mixture and turn to coat. Just before serving, stir in more pasta water to thin sauce out as necessary. Serve immediately, sprinkle with minced herbs, black pepper, and cheese, and drizzle with additional olive oil.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Yields 4 servings. Total time: 35 minutes.</li>
+</ul></template>
+
+<template id="recipe-35"><h1>Lobster Macaroni and Cheese</h1>
+<p><strong>Source:</strong> http://chefmichaelsmith.com/recipe/lobster-macaroni-and-cheese/
+<strong>Date saved:</strong> unknown</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 box penne pasta</li>
+<li>1 stick butter</li>
+<li>2 chopped garlic cloves</li>
+<li>1/2 cup flour</li>
+<li>1/2 cup white wine</li>
+<li>1 can evaporated milk</li>
+<li>4 cups milk</li>
+<li>1 tablespoon paprika</li>
+<li>2 tablespoons Dijon mustard</li>
+<li>1/4 teaspoon cayenne pepper</li>
+<li>8 ounces cheddar cheese, grated</li>
+<li>8 ounces Monterrey jack cheese, grated</li>
+<li>Salt and pepper</li>
+<li>2 one-pound lobsters, cooked and shelled</li>
+<li>2 cups breadcrumbs</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Preheat oven to 350 degrees. Drop the pasta into boiling, salted water and cook until almost tender, about 12 minutes. Make sure the water tastes like a day at the beach, as the pasta will absorb it and become properly seasoned. The pasta should not be fully cooked; it should have just a touch of firmness when tasted. Drain well.</li>
+<li>Melt the butter in a saucepan over medium heat, add garlic and cook for several minutes until it softens. Add the flour and stir with a wooden spoon until a smooth paste forms. Continue cooking for a few more minutes, in effect toasting the mixture and adding flavour to it. Slowly stir in the wine and continue mixing until smooth and then add both milks, mixing well again. Continue whisking until the mixture coats the back of a spoon. Add paprika, Dijon, cayenne, salt, pepper and cheeses and stir until melted.</li>
+<li>Roughly chop lobster meat and add to the cheese mixture along with the pasta. Stir well to combine and season with salt and pepper. Pour into a 9-inch by 13-inch ovenproof casserole or similar dish. Sprinkle with breadcrumbs and bake until the mixture is heated through and the breadcrumbs are golden brown, about 30 minutes.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Yield: 6 servings.</li>
+<li>Recipe by Chef Michael Smith. This version is also great without the lobster.</li>
+</ul></template>
+
+<template id="recipe-36"><h1>Steak Taco Bowl</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2016-05-06</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 lb skirt steak</li>
+<li>2 limes, zested and juiced</li>
+<li>4 tbsp tequila</li>
+<li>2 tsp garlic powder</li>
+<li>1/2 tsp cumin powder</li>
+<li>1/2 tsp cayenne powder</li>
+<li>Salt and pepper to taste</li>
+<li>2 flour tortillas</li>
+<li>Vegetable oil for brushing tortillas</li>
+<li>1 romaine lettuce heart, chopped</li>
+<li>1/4 cup canned black beans, drained</li>
+<li>1/4 cup tomato, diced</li>
+<li>1/4 cup cooked corn</li>
+<li>1 lime</li>
+<li>Cilantro to taste</li>
+<li>Sliced jalapeno to taste</li>
+<li>Sour cream</li>
+<li>Hot sauce to taste</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine steak with lime zest, lime juice, tequila, garlic powder, cumin, cayenne, salt, and pepper. Cover and set aside to marinate for at least 1 hour or overnight.</li>
+<li>Make tostada bowls: Preheat oven to 300 degrees F. Brush tortillas on both sides with vegetable oil. Place them in oven-safe bowls to create bowl-like shapes. Bake for about 6-8 minutes, checking occasionally to prevent burning. Remove from oven and keep in the bowl until cool.</li>
+<li>In a large bowl, combine chopped lettuce, black beans, tomato, corn, and some lime juice.</li>
+<li>In a skillet or grill on medium-high heat, cook steak on both sides until seared and cooked to your preferred doneness. Set aside to rest for about 5 minutes. Slice into bite-sized pieces.</li>
+<li>To assemble, place the salad in the tostada bowl, top with steak, sour cream, jalapenos, cilantro, and hot sauce.</li>
+</ol></template>
+
+
+
+<template id="recipe-8"><h1>Bavarian Pretzels</h1>
+<p><strong>Source:</strong> http://www.theoktoberfest.com/HTML/pretzel/
+<strong>Date saved:</strong> 2014-03-14</p>
+<h2>Ingredients</h2>
+<p><strong>Dough:</strong>
+- 1 package active dry yeast (2 tsp)
+- 1/8 cup warm water (105 degrees F)
+- 1 1/3 cups warm water
+- 1/8 tsp salt
+- 1 tablespoon brown sugar
+- 4 1/2 cups flour (520 grams)</p>
+<p><strong>Baking soda bath:</strong>
+- 2 tablespoons baking soda per cup of water
+- Coarse ground sea salt or pretzel salt</p>
+<h2>Instructions</h2>
+<ol>
+<li>Dissolve yeast in 1/8 cup warm water and brown sugar. Stir in 1 1/3 cups warm water, add salt and flour. Knead dough until smooth and elastic. Dough does not need to rise.</li>
+<li>Heat oven to 400 degrees F.</li>
+<li>In a saucepan, measure 2 tablespoons baking soda to each cup of water. Put enough water to fill the saucepan at least 3 inches high. Bring soda and water mixture to a light boil and set heat to simmer. Make sure the baking soda is well dissolved.</li>
+<li>Cut the dough into eight pieces. Roll a long thick pencil shape with your hands but keep the middle a little thicker. Pick up both ends, cross to form rabbit ears and then twist the ends and pull them back to the rest of the loop. Place aside on lightly floured surface and let rise 10 minutes or so.</li>
+<li>Place pretzels one at a time in water/baking soda mixture for 10-15 seconds. Push down with a plastic utensil to ensure good coverage. Remove the pretzel from the bath (let drain a few seconds) and place onto a pan lined with parchment paper.</li>
+<li>Use a sharp knife and slit the fattest part of the pretzel lengthwise. Salt the top of pretzels with coarse ground sea salt or pretzel salt.</li>
+<li>Place cookie sheet with pretzels into the oven for 18-19 minutes or until pretzel is to desired darkness.</li>
+</ol>
+<h2>Notes</h2>
+<p>Pretzels made with lye will get quite dark and the tips should be hard. Pretzels made with baking soda will not get as brown. Enjoy while warm.</p></template>
+
+<template id="recipe-10"><h1>Choereg (Armenian Easter Bread)</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2013-03-12</p>
+<h2>Ingredients</h2>
+<p><strong>Yeast Mixture:</strong>
+- 1/2 cup lukewarm water
+- 2 teaspoons white sugar
+- 2 (.25 ounce) envelopes active dry yeast</p>
+<p><strong>Bread Dough:</strong>
+- 1 cup whole milk
+- 2 cups unsalted butter
+- 1 cup white sugar
+- 5 eggs
+- 6 cups all-purpose flour
+- 1 1/2 teaspoons baking powder
+- 1 1/2 tablespoons ground mahleb
+- 1 1/2 teaspoons salt</p>
+<p><strong>Top Brushing:</strong>
+- 1 egg, beaten
+- 1 tablespoon sesame seeds</p>
+<h2>Instructions</h2>
+<ol>
+<li>In a saucepan over medium heat, combine the milk, butter and margarine. Heat until butter and margarine are melted, but do not let it boil. Stir in 1 cup of sugar until dissolved, then set aside to cool to lukewarm.</li>
+<li>Meanwhile, in a small bowl, dissolve 2 teaspoons of sugar in warm water. Sprinkle the yeast over the surface, and let stand until frothy, about 10 minutes.</li>
+<li>Crack the eggs into a large bowl, and stir a little to break up the yolks. Slowly pour in the heated milk mixture while whisking constantly, so as to temper the eggs and not cook them. Add the yeast mixture, and stir just until blended.</li>
+<li>In a large bowl, combine the flour, baking powder, mahleb, and salt. Make a well in the center, and pour in the wet mixture. Stir until it forms a sticky dough. Pour onto a floured surface, and knead in additional flour as needed to make a more substantial dough. Knead for about 10 minutes. Place in an oiled bowl, and set in a warm place to rise for about 2 hours, or until doubled in size.</li>
+<li>When the dough has doubled, punch down again, and let rise until doubled. It will only take about one hour this time.</li>
+<li>Separate the dough into 5 even portions, then separate each of those into thirds. Roll each of those into ropes about 12 inches long. Braid sets of three ropes together, pinching the ends to seal, and tucking them under for a better presentation. Place the loaves onto baking sheets lined with parchment paper. Loaves should be spaced 4 inches apart. Set in a warm place to rise until your finger leaves an impression behind when you poke the loaf gently.</li>
+<li>Preheat the oven to 350 degrees F (175 degrees C). Brush the loaves with beaten egg, and sprinkle with sesame seeds.</li>
+<li>Bake for 25 minutes in the preheated oven, or until nicely golden brown all over.</li>
+</ol></template>
+
+<template id="recipe-11"><h1>Dutch Oven Bread</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2015-06-11</p>
+<h2>Ingredients</h2>
+<ul>
+<li>4 cups flour</li>
+<li>1 1/2 cups water</li>
+<li>1 teaspoon active dry yeast</li>
+<li>Kosher salt or coarse sea salt</li>
+<li>Vegetable oil or vegetable oil spray</li>
+<li>Olive oil</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine the flour, water, yeast and salt in the bowl of a stand mixer fitted with a dough hook. Mix on medium speed until the dough is smooth and elastic, 5 to 10 minutes. Depending on the size of the bowl, you may need to stop the mixer and remove the dough from the dough hook if the dough is not developing thoroughly. When the dough looks smooth, cut off a piece and stretch it. If it stretches to the point of transparency, it's mixed enough. If not, continue mixing.</li>
+<li>Remove the bowl from the mixer and cover it with a pot lid or plastic wrap. Allow the dough to rise until it has doubled in size and does not spring back when you push your finger into it, 2 to 4 hours.</li>
+<li>Turn the dough out onto a work surface and knead it to release the gas and redistribute the yeast. Shape it roughly into a ball, cover it with a towel, and let stand for 10 minutes to allow the gluten to relax.</li>
+<li>Shape the dough into a tight ball -- the tighter the better -- by rolling it on the work surface between your palms.</li>
+<li>Spray or coat the bottom and sides of a large Dutch oven or other heavy ovenproof pot (5 1/2 quarts or larger) with vegetable oil. Put the dough in the center of the pot and place the lid on. Allow the dough to rise again, 30 to 60 minutes (less if it's very hot and humid, more if it's cold).</li>
+<li>Preheat the oven to 450 F.</li>
+<li>Rub 1 tablespoon olive oil, or more if you like, gently over the surface of the dough. Score the bread with a sharp knife or razor, making an X or a hash mark; this will allow the dough to expand freely. Sprinkle the dough with salt. Cover the pot and place it in the oven.</li>
+<li>After 30 minutes, remove the lid, reduce the oven temperature to 375 F, and continue baking until the bread is nicely browned and cooked through. It should have an internal temperature of 200 F or so when done.</li>
+<li>Allow the bread to rest on a rack for at least 30 minutes so that the interior finishes cooking.</li>
+</ol>
+<h2>Notes</h2>
+<p>Created for the 5 1/2 qt. round Dutch oven. Makes 1 loaf.</p></template>
+
+<template id="recipe-12"><h1>Easter Bread</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2014-06-11</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 cup whole milk</li>
+<li>1 cup unsalted butter</li>
+<li>1 cup margarine</li>
+<li>1 cup white sugar</li>
+<li>1/2 cup lukewarm water</li>
+<li>2 teaspoons white sugar</li>
+<li>2 (.25 ounce) envelopes active dry yeast</li>
+<li>5 eggs</li>
+<li>6 cups all-purpose flour, or as needed</li>
+<li>1 1/2 teaspoons baking powder</li>
+<li>1 1/2 tablespoons ground mahleb</li>
+<li>1 1/2 teaspoons salt</li>
+<li>1 egg, beaten</li>
+<li>1 tablespoon sesame seeds</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>In a saucepan over medium heat, combine the milk, butter and margarine. Heat until butter and margarine are melted, but do not let it boil. Stir in 1 cup of sugar until dissolved, then set aside to cool to lukewarm.</li>
+<li>Meanwhile, in a small bowl, dissolve 2 teaspoons of sugar in warm water. Sprinkle the yeast over the surface, and let stand until frothy, about 10 minutes.</li>
+<li>Crack the eggs into a large bowl, and stir a little to break up the yolks. Slowly pour in the heated milk mixture while whisking constantly, so as to temper the eggs and not cook them. Add the yeast mixture, and stir just until blended.</li>
+<li>In a large bowl, combine the flour, baking powder, mahleb, and salt. Make a well in the center, and pour in the wet mixture. Stir until it forms a sticky dough. Pour onto a floured surface, and knead in additional flour as needed to make a more substantial dough. Knead for about 10 minutes. Place in an oiled bowl, and set in a warm place to rise for about 2 hours, or until doubled in size.</li>
+<li>When the dough has doubled, punch down again, and let rise until doubled. It will only take about half as long this time.</li>
+<li>Separate the dough into 5 even portions, then separate each of those into thirds. Roll each of those into ropes about 12 inches long. Braid sets of three ropes together, pinching the ends to seal, and tucking them under for a better presentation. Place the loaves onto baking sheets lined with parchment paper. Loaves should be spaced 4 inches apart. Set in a warm place to rise until your finger leaves an impression behind when you poke the loaf gently.</li>
+<li>Preheat the oven to 350 degrees F (175 degrees C). Brush the loaves with beaten egg, and sprinkle with sesame seeds.</li>
+<li>Bake for 25 minutes in the preheated oven, or until nicely golden brown all over.</li>
+</ol>
+<h2>Notes</h2>
+<p>You may preheat the oven to 200 degrees F (95 degrees C) while mixing, and then turn it off and let it cool down to about 100 degrees. Place your dough in there to proof with the oven light on, and it will rise much faster.</p></template>
+
+<template id="recipe-14"><h1>KitchenAid White Bread</h1>
+<p><strong>Source:</strong> http://www.babylovingmama.com/2010/05/making-bread-with-my-kitchenaid-artisan-stand-mixer-review-recipe.html
+<strong>Date saved:</strong> 2012-04-03</p>
+<h2>Ingredients</h2>
+<ul>
+<li>6 to 7 cups all-purpose flour</li>
+<li>2 tablespoons sugar</li>
+<li>3 1/2 teaspoons salt</li>
+<li>3 packages active dry yeast</li>
+<li>1/4 cup butter or margarine, softened</li>
+<li>2 cups very warm water (120 to 130 degrees F)</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Add 5 1/2 cups flour, sugar, salt, yeast and butter to your mixer bowl. Attach dough hook to mixer. Turn to Speed 2 and mix about 20 seconds.</li>
+<li>Gradually add 2 cups very warm water (120 to 130 degrees F). Mix about 1-1/2 minutes longer.</li>
+<li>Continuing on Speed 2, add remaining 1/2 cup to 1 1/2 cups flour (1/2 cup at a time) and mix until dough clings to hook and cleans side of bowl, about 2 minutes.</li>
+<li>Knead on Speed 2 about 2 minutes longer.</li>
+<li>Cover with plastic wrap and a towel. Let rest for 20 minutes.</li>
+<li>Divide dough in half.</li>
+<li>On a lightly floured surface, roll each half into a rectangle, approximately 9x14 inches.</li>
+<li>To create the loaf shape, starting at the short end, roll the dough tightly.</li>
+<li>Pinch to seal seam then turn under.</li>
+<li>Place the dough, seam side down, in greased 8 1/2 x 4 1/2 x 2 1/2 inch loaf pans.</li>
+<li>Brush each loaf with oil and cover loosely with plastic wrap.</li>
+<li>Refrigerate 2 to 12 hours.</li>
+<li>When ready to bake, uncover dough carefully. Let stand at room temperature 10 minutes. Puncture any gas bubbles.</li>
+<li>Bake at 400 degrees F for 35-40 minutes.</li>
+<li>Remove from pans immediately and cool on wire racks.</li>
+</ol>
+<h2>Notes</h2>
+<p>Rapid mix, cool rise method. Makes 2 loaves.</p></template>
+
+<template id="recipe-20"><h1>Naan Bread with Yogurt</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2024-04-03</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1/2 cup warm water</li>
+<li>2 tablespoons active dry yeast</li>
+<li>1 teaspoon sugar</li>
+<li>2 1/2 cups all-purpose flour</li>
+<li>1/2 cup yogurt</li>
+<li>1 tablespoon olive oil</li>
+<li>Pinch of salt</li>
+<li>Butter, garlic, and cilantro for topping</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine warm water, yeast, and sugar. Stir and rest for 10 minutes.</li>
+<li>Add flour, yogurt, olive oil, and salt. Mix and knead for 10 minutes.</li>
+<li>Form into a ball, cover with a damp towel, and rest for 1 hour.</li>
+<li>Cut dough to size and flatten each piece.</li>
+<li>Heat a pan on medium-low with olive oil.</li>
+<li>Cook each piece for about 2 minutes on each side.</li>
+<li>Top with butter, garlic, and cilantro.</li>
+</ol></template>
+
+<template id="recipe-15"><h1>Overnight Rise Pizza Dough</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2012-12-12</p>
+<h2>Ingredients</h2>
+<ul>
+<li>6 1/2 cups bread flour</li>
+<li>2 teaspoons yeast</li>
+<li>3 1/4 cup cold water</li>
+<li>6 tablespoons olive oil</li>
+<li>2 teaspoons salt</li>
+<li>3 teaspoons sugar</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Mix yeast, sugar and salt together with a cup of water.</li>
+<li>Put 5 cups of flour in mixer (or bowl if you're doing it old school).</li>
+<li>Add yeast mixture, olive oil and water. Start mixing.</li>
+<li>Slowly add remaining flour until you get a moist ball of dough. Don't put too much flour in because the dough will get too dry.</li>
+<li>Knead dough for around 10 minutes.</li>
+<li>Cut the dough ball into 8 individual balls.</li>
+<li>Coat each ball with more olive oil, put them in a bowl and let them rise overnight in the fridge.</li>
+<li>Take them out of the fridge an hour prior to cooking.</li>
+<li>Preheat your oven with pizza stone for an hour, and set the temp as high as it will go.</li>
+<li>Pizzas take 3 or 4 minutes to cook depending on toppings.</li>
+</ol>
+<h2>Notes</h2>
+<p>Makes roughly 8 10" pizzas.</p></template>
+
+<template id="recipe-9"><h1>Red Lobster Cheddar Biscuits</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2013-05-07</p>
+<h2>Ingredients</h2>
+<p><strong>Biscuits:</strong>
+- 2 1/2 cups Bisquick baking mix
+- 3/4 cup cold whole milk
+- 4 tablespoons cold butter (1/2 stick)
+- 1/4 teaspoon garlic powder
+- 1 heaping cup grated cheddar cheese</p>
+<p><strong>Brush onto the biscuits:</strong>
+- 2 tablespoons butter, melted
+- 1/4 teaspoon dried parsley flakes
+- 1/2 teaspoon garlic powder
+- Heavy pinch of salt</p>
+<h2>Instructions</h2>
+<ol>
+<li>Preheat your oven to 400 degrees.</li>
+<li>Combine Bisquick with cold butter in a medium bowl using a pastry cutter or a large fork. You don't want to mix too thoroughly. There should be small chunks of butter in there that are about the size of peas. Add cheddar cheese, milk, and 1/4 teaspoon garlic. Mix by hand until combined, but don't over mix.</li>
+<li>Drop approximately 1/4-cup portions of the dough onto an ungreased cookie sheet using an ice cream scoop.</li>
+<li>Bake for 15 to 17 minutes or until the tops of the biscuits begin to turn light brown.</li>
+<li>When you take the biscuits out of the oven, melt 2 tablespoons butter in a small bowl in your microwave. Stir in 1/2 teaspoon garlic powder and the dried parsley flakes. Use a brush to spread this garlic butter over the tops of all the biscuits. Use up all of the butter.</li>
+</ol>
+<h2>Notes</h2>
+<p>Makes one dozen biscuits.</p></template>
+
+<template id="recipe-13"><h1>Simple Flour Tortillas</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2013-09-15</p>
+<h2>Ingredients</h2>
+<ul>
+<li>3 cups flour</li>
+<li>1 teaspoon salt</li>
+<li>1/3 cup oil</li>
+<li>1 cup warm water</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Mix flour and salt in a medium mixing bowl. Cut in oil with a fork.</li>
+<li>Slowly incorporate water, mixing with your hands until a soft dough forms. You will probably not use the entire 1 cup of warm water; closer to 3/4 cup is typical.</li>
+<li>If you have an electric stove, preheat pan to medium heat.</li>
+<li>Form 2 inch balls of dough.</li>
+<li>Roll flat with a rolling pin (or use a tortilla press). Roll the dough as flat as you possibly can -- if you try for paper thin, you'll probably end up with cardstock thin and it'll be perfect.</li>
+<li>Place tortilla in hot pan. When it bubbles, flip. Cook second side until brown spots form.</li>
+</ol>
+<h2>Notes</h2>
+<ul>
+<li>Makes approximately fourteen 10-inch tortillas.</li>
+<li>No need to flour the counter or grease the pan. If the dough is right, it will stretch and not stick.</li>
+<li>You can stack rolled tortillas before cooking, so you can roll as you go or roll ahead.</li>
+<li>Store in a gallon Ziploc bag in the fridge. Make sure the bag is airtight or the tortillas will dry out.</li>
+<li>You can stack finished tortillas directly from the pan to a cooling plate before they are fully cooled.</li>
+</ul></template>
+
+<template id="recipe-16"><h1>Simple Whole Wheat Bread</h1>
+<p><strong>Source:</strong> http://allrecipes.com/recipe/simple-whole-wheat-bread/detail.aspx
+<strong>Date saved:</strong> 2012-09-01</p>
+<h2>Ingredients</h2>
+<ul>
+<li>3 cups warm water (110 degrees F/45 degrees C)</li>
+<li>2 (.25 ounce) packages active dry yeast</li>
+<li>2/3 cup honey, divided</li>
+<li>5 cups bread flour</li>
+<li>5 tablespoons butter, melted, divided</li>
+<li>1 tablespoon salt</li>
+<li>4 cups whole wheat flour, or more as needed</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Gather all ingredients.</li>
+<li>Mix warm water, yeast, and 1/3 cup honey in a large bowl to dissolve.</li>
+<li>Add 5 cups bread flour, and stir to combine.</li>
+<li>Let sit for 30 minutes, or until big and bubbly.</li>
+<li>Mix in 3 tablespoons melted butter, remaining 1/3 cup honey, and salt. Stir in 2 cups whole wheat flour.</li>
+<li>Transfer dough to a floured work surface and gradually knead in remaining 2 cups whole wheat flour.</li>
+<li>Knead until dough starts to pull away from the work surface, adding more whole wheat flour if necessary; dough should be a bit tacky to the touch, but not too sticky.</li>
+<li>Place in a greased bowl, turning once to coat the surface of the dough.</li>
+<li>Cover with a dish towel and let rise in a warm place until doubled, 45 minutes to 1 hour.</li>
+<li>Grease three 9x5-inch loaf pans. Punch down the dough, and divide it into 3 loaves.</li>
+<li>Place in the prepared loaf pans, and allow to rise until dough has topped the pans by one inch, another 45 minutes to 1 hour.</li>
+<li>Preheat the oven to 350 degrees F (175 degrees C). Bake the risen loaves in the preheated oven until golden brown for 25 to 30 minutes; do not overbake.</li>
+<li>Lightly brush the tops of the loaves with remaining 2 tablespoons melted butter when done to prevent crust from getting hard.</li>
+<li>Cool completely.</li>
+</ol>
+<h2>Notes</h2>
+<p>Yields 36 servings (3 loaves). Total time approximately 170 minutes.</p></template>
+
+<template id="recipe-17"><h1>Soft Pretzels</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2011-10-21</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 1/8 cups water (70 to 80 degrees F)</li>
+<li>3 cups all-purpose flour</li>
+<li>3 tablespoons brown sugar</li>
+<li>1 1/2 teaspoons active dry yeast</li>
+<li>2 quarts water</li>
+<li>1/2 cup baking soda</li>
+<li>Coarse salt</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>In bread machine pan, place the first four ingredients in order suggested by manufacturer. Select dough setting (check dough after 5 minutes of mixing; add 1 to 2 tablespoons water or flour if needed).</li>
+<li>When cycle is completed, turn dough onto a lightly floured surface. Divide dough into eight balls. Roll each into a 20-inch rope; form into pretzel shape.</li>
+<li>In a saucepan, bring water and baking soda to a boil. Drop pretzels into boiling water, two at a time; boil for 10-15 seconds. Remove with a slotted spoon; drain on paper towels.</li>
+<li>Place pretzels on greased baking sheets. Bake at 425 degrees F for 8-10 minutes or until golden brown.</li>
+<li>Spritz or lightly brush with water. Sprinkle with salt.</li>
+</ol></template>
+
+<template id="recipe-18"><h1>Sourdough Bagels</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2022-12-13</p>
+<h2>Ingredients</h2>
+<p><strong>Dough:</strong>
+- 200 g (1 cup) bubbly, active 100% hydration sourdough starter
+- 315 g (1-1/4 cups) cold water
+- 30 g (2 tbsp) barley malt syrup (or substitute maple syrup)
+- 750 g (5 cups) all-purpose flour
+- 10 g (2 tsp) fine salt
+- Flour or semolina for proofing</p>
+<p><strong>For boiling:</strong>
+- 1 tablespoon baking soda
+- 1 tablespoon brown sugar</p>
+<h2>Instructions</h2>
+<p><strong>Day 1:</strong></p>
+<ol>
+<li>In the bowl of a stand mixer fitted with a paddle attachment, mix your bubbly, active starter with the water and maple syrup until well-combined. Alternatively, mix in a standard large bowl with a fork or whisk.</li>
+<li>Add in the flour and salt and transition to a dough hook. Knead on medium until the dough is smooth and somewhat pliable, about 6-7 minutes. Alternatively, knead the dough by hand on a countertop until smooth and pliable.</li>
+<li>Shape into a ball (return to bowl, if applicable) and cover bowl with a towel. Rest 20 minutes.</li>
+<li>Divide the dough into 8 equal pieces for large bagels or 10 equal pieces for smaller ones. Shape each piece into a small ball by tucking the corners underneath, cupping the dough, and rolling it in a circular fashion on a clean, flour-free countertop. This helps to create surface tension and a skin on the ball.</li>
+<li>Cover dough balls and rest another 15 minutes. Line a baking sheet with parchment paper and sprinkle generously with flour or semolina. If you make 10 bagels, you will need to use 2 baking sheets.</li>
+<li>To shape the bagels, you have 2 options: (A) Flatten the ball of dough into a disc and use your fingertips to roll into a log about 8 inches long. Wrap the log around your three middle fingers with the ends overlapping by 2 inches on the inside of your hand. Roll gently, palm down, until the ends are joined together. This will create a larger hole in the centre of the bagel. (B) Poke a hole with your finger directly through the centre of the dough ball. Insert both index fingers into the hole and roll fingers around each other to stretch out the centre (like a barrel roll) until it's about the size of a walnut. This will create a smaller bagel hole, but is much faster and more efficient. Place on the lined baking sheet and repeat with the rest of the bagels.</li>
+<li>Cover the shaped bagels with a towel, let them proof at room temperature for 2.5 to 4.5 hours, or until puffy. This could take more time, depending on the temperature in your house. Take a test bagel and place it in cold water. If it floats, they're done proofing. Dry the test bagel off and return to the baking sheet. If it sinks, it still needs to proof longer.</li>
+<li>Once proofed, cover the pan with plastic wrap and refrigerate 12 to 24 hours.</li>
+</ol>
+<p><strong>Day 2:</strong></p>
+<ol>
+<li>Preheat oven to 450 degrees F (230 degrees C). Place toppings on flat plates, so they are ready to go.</li>
+<li>Bring a large pot of water to a rolling boil and add the baking soda and brown sugar. Remove the bagels from the fridge and gently place them, a couple at a time, into the water. Boil for 15-20 seconds on each side.</li>
+<li>Remove boiled bagels with a slotted spoon to get rid of most of the water.</li>
+<li>Shake off excess water and immediately dip the top of bagel into desired toppings. Set back on the baking sheet. Repeat this process with the remaining bagels.</li>
+<li>Place the baking sheet into the center of the oven and turn it down to 400 degrees F (200 degrees C).</li>
+<li>Bake for 18 to 22 minutes or until golden on top. Cool on a wire rack until ready to serve.</li>
+</ol>
+<h2>Notes</h2>
+<p>This is a low hydration dough and it will be stiff. Your mixer might have to work pretty hard at it and you may want to add another tablespoon or two of water, but it is meant to be stiff in texture.</p></template>
+
+<template id="recipe-19"><h1>Sourdough Bread with All-Purpose Flour</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2022-12-13</p>
+<h2>Ingredients</h2>
+<p><strong>For a small loaf:</strong>
+- 50 g (1/4 cup) bubbly, active starter
+- 165 g (1/2 cup + 3 tbsp) water
+- 5 g (1 tsp) fine sea salt
+- 250 g (2 cups + 1 tbsp) all-purpose flour (Trader Joe or King Arthur)</p>
+<p><strong>For a larger, standard size loaf:</strong>
+- 50 g (1/4 cup) bubbly, active starter
+- 330 g (1 1/3 cup + 1 tbsp) water
+- 9 g (1 1/2 tsp) fine sea salt
+- 500 g (4 1/4 cups) all-purpose flour (Trader Joe or King Arthur)</p>
+<h2>Instructions</h2>
+<p><strong>Make the Dough:</strong></p>
+<ol>
+<li>In the evening, whisk the starter and water together in a large bowl. Add the flour and salt. Mix with a fork until a stiff dough forms, then finish by hand to fully incorporate the flour. It will feel rough and shaggy, and slightly sticky. Cover with a damp towel or plastic wrap and let rest at room temperature (68 F) for 30 minutes.</li>
+<li>After the dough has rested, work the dough into a ball. To do this, grab a portion of the dough and fold it over, pressing your fingertips into the center. Repeat, working your way around the dough until it begins to tighten.</li>
+</ol>
+<p><strong>Bulk Rise:</strong></p>
+<ol>
+<li>Cover the bowl (damp towel or plastic wrap) and let rise overnight at room temperature. This will take about 10 to 12 hours at 68 F. The dough is ready when it no longer looks dense and has doubled in size. If using a standard 8-inch bowl, the dough will rise about 1/2 way up the sides.</li>
+<li>Optional: About 1 hour into the bulk rise, do 1 set of stretch and folds. Repeat 1 hour later. This will increase the overall volume of the bread.</li>
+</ol>
+<p><strong>Shape the Dough (Preshape):</strong></p>
+<ol>
+<li>The following morning, line a small bowl with a cotton or linen cloth. Sprinkle with flour.</li>
+<li>Remove the dough onto a floured surface. To shape the dough into a round, starting at the top, gently fold the dough over toward the center. Give it a turn and fold over the next section. Repeat until you have come full circle. Using a bench knife, scoop up the dough and flip it over (the smooth side should be facing up). Cover and rest for 20-30 minutes.</li>
+</ol>
+<p><strong>Final Shape:</strong></p>
+<ol>
+<li>After the dough has rested, flip it over again (the smooth side should be facing down now). Shape it again following the steps above. Flip it back over. With floured hands, gently cup the dough and pull it toward you in a circular motion to tighten its shape.</li>
+<li>Place the dough into the lined bowl, seam side up. Cover the dough with the cloth overhang.</li>
+</ol>
+<p><strong>Second Rise:</strong></p>
+<ol>
+<li>The dough needs to rise again. Rest for 30 minutes to 1 hour. The dough is ready when it looks puffy and has risen slightly, but has not yet doubled in size.</li>
+<li>Preheat your oven to 450 F. Cut a sheet of non-stick parchment paper to fit the size of your baking pot, leaving enough excess around the sides to remove the bread.</li>
+</ol>
+<p><strong>Score the Dough:</strong></p>
+<ol>
+<li>Place the parchment over the dough and invert the bowl to release. Sprinkle the dough with flour and gently rub the surface with your hands. Using the tip of a bread lame, small serrated knife, or a razor blade, make four shallow 4-inch long cuts at 3, 6, 9, and 12 o'clock around the dough. Use the parchment paper to transfer the dough to the baking pot.</li>
+</ol>
+<p><strong>Bake the Dough:</strong></p>
+<ol>
+<li>Reduce the heat to 425 F. Bake the dough on the center rack for 20 minutes, covered. Remove the lid, and continue to bake for 30-35 minutes until golden brown (40 minutes uncovered for the larger, standard loaf).</li>
+<li>When finished, transfer to a wire rack. Cool for 1 hour before slicing, for best texture.</li>
+</ol>
+<h2>Notes</h2>
+<p>Use 50 g of starter for both the small and standard size loaf. Using a smaller amount of starter with a long, overnight rise will help to prevent over-proofed dough in the morning. If the dough feels too wet, add 1 tbsp of flour and mix thoroughly by hand, adding more as needed. If it's too dry, add 1 tbsp of water.</p></template>
+
+
+
+<template id="recipe-42"><h1>Cashew Cheese Sauce</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2016-11-18</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1 cup (240 ml) water</li>
+<li>2 tbsp (30 ml) lemon juice</li>
+<li>1/4 cup (50 g) green chilies</li>
+<li>1 cup (70 g) whole raw cashews</li>
+<li>1 1/4 tsp onion powder</li>
+<li>1/4 cup (30 g) nutritional yeast</li>
+<li>2 tsp salt</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Add all ingredients to a Vitamix or high-powered blender.</li>
+<li>Blend until smooth.</li>
+<li>Enjoy.</li>
+</ol>
+<h2>Notes</h2>
+<p>Recipe originally from Vitamix.</p></template>
+
+<template id="recipe-43"><h1>Hill Country BBQ Sauce</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2015-06-21</p>
+<h2>Ingredients</h2>
+<ul>
+<li>1/2 lb butter</li>
+<li>1/2 yellow onion</li>
+<li>1 1/2 cups ketchup</li>
+<li>1/2 cup apple cider vinegar</li>
+<li>2 oz brown sugar</li>
+<li>1 tsp kosher salt</li>
+<li>1 tsp black pepper</li>
+<li>1 tsp chili powder</li>
+<li>1 tsp garlic powder</li>
+<li>1/2 lemon</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Combine all ingredients and cook together (no further instructions were provided in the original).</li>
+</ol>
+<h2>Notes</h2>
+<p>Original email was an ingredient list only. No cooking instructions were included.</p></template>
+
+
+
+<template id="recipe-22"><h1>Homemade Vanilla Ice Cream (Custard-Based)</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2023-05-08</p>
+<h2>Ingredients</h2>
+<ul>
+<li>2 cups heavy cream</li>
+<li>1 cup whole milk</li>
+<li>3/4 cup granulated sugar</li>
+<li>Pinch of salt</li>
+<li>6 large egg yolks</li>
+<li>2 teaspoons pure vanilla extract</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>In a medium saucepan, combine the heavy cream, whole milk, sugar, and salt. Cook over medium heat, stirring occasionally, until the sugar has dissolved and the mixture is hot but not boiling.</li>
+<li>In a separate bowl, whisk together the egg yolks until they are light and frothy.</li>
+<li>Slowly pour about half of the hot cream mixture into the egg yolks, whisking constantly to prevent the eggs from curdling. Pour the egg mixture back into the saucepan with the remaining cream mixture and cook over low heat, stirring constantly with a wooden spoon, until the mixture thickens and coats the back of the spoon. Be careful not to let the mixture boil or it may curdle.</li>
+<li>Remove the saucepan from the heat and stir in the vanilla extract. Let the mixture cool to room temperature.</li>
+<li>Pour the mixture into your ice cream maker and churn according to the manufacturer's instructions until it reaches a soft-serve consistency.</li>
+<li>Transfer the ice cream to a freezer-safe container and freeze for at least 2 hours or until firm.</li>
+<li>When ready to serve, let the ice cream sit at room temperature for a few minutes to soften before scooping.</li>
+</ol>
+<h2>Notes</h2>
+<p>Recipe was generated via ChatGPT. Works with any standard ice cream maker.</p></template>
+
+<template id="recipe-23"><h1>KitchenAid Vanilla Ice Cream</h1>
+<p><strong>Source:</strong> email
+<strong>Date saved:</strong> 2014-05-23</p>
+<h2>Ingredients</h2>
+<ul>
+<li>2 1/2 cups half-and-half</li>
+<li>8 egg yolks</li>
+<li>1 cup sugar</li>
+<li>2 1/2 cups whipping cream</li>
+<li>4 teaspoons vanilla</li>
+<li>1/8 teaspoon salt</li>
+</ul>
+<h2>Instructions</h2>
+<ol>
+<li>Heat half-and-half until very hot but not boiling, stirring often. Remove from heat; set aside.</li>
+<li>Place egg yolks and sugar in mixer bowl with wire whip. Turn to Speed 2 and mix about 30 seconds until slightly thickened.</li>
+<li>Continuing on Speed 2, very gradually add half-and-half; mix until blended.</li>
+<li>Return half-and-half mixture to medium saucepan; cook over medium heat until small bubbles form around edge and mixture is steamy, stirring constantly.</li>
+<li>Transfer half-and-half mixture into large bowl; stir in whipping cream, vanilla, and salt. Cover and chill thoroughly, at least 8 hours.</li>
+<li>Assemble KitchenAid freeze bowl. Turn to STIR (Speed 1).</li>
+<li>Using a container with a spout, pour mixture into freeze bowl. Continue on STIR (Speed 1) for 15 to 20 minutes or until desired consistency.</li>
+<li>Immediately transfer ice cream into serving dishes, or freeze in airtight container.</li>
+</ol>
+<h2>Notes</h2>
+<p>Recipe is designed for the KitchenAid stand mixer ice cream attachment.</p></template>
+
+
+
+<script>
+(function () {
+  'use strict';
+
+  const grid        = document.getElementById('card-grid');
+  const searchInput = document.getElementById('search');
+  const noResults   = document.getElementById('no-results');
+  const visibleCount = document.getElementById('visible-count');
+  const sectionTitle = document.getElementById('section-title');
+  const catNav      = document.getElementById('category-nav');
+  const overlay     = document.getElementById('detail-overlay');
+  const panel       = document.getElementById('detail-panel');
+  const detailBody  = document.getElementById('detail-body');
+  const closeBtn    = document.getElementById('close-btn');
+  const printBtn    = document.getElementById('print-btn');
+
+  let activeCat   = 'all';
+  let searchQuery = '';
+
+  // ── FILTER ──────────────────────────────────────────────
+  function applyFilter() {
+    const cards = grid.querySelectorAll('.card');
+    let shown = 0;
+    const q = searchQuery.toLowerCase();
+
+    cards.forEach(card => {
+      const catMatch  = activeCat === 'all' || card.dataset.category === activeCat;
+      const textMatch = !q || card.dataset.search.includes(q);
+      const visible   = catMatch && textMatch;
+      card.classList.toggle('hidden', !visible);
+      if (visible) shown++;
+    });
+
+    noResults.style.display = shown === 0 ? 'block' : 'none';
+    visibleCount.textContent = shown === 1 ? '1 recipe' : shown + ' recipes';
+  }
+
+  // ── CATEGORY NAV ────────────────────────────────────────
+  catNav.addEventListener('click', function (e) {
+    const link = e.target.closest('.cat-link');
+    if (!link) return;
+    e.preventDefault();
+
+    catNav.querySelectorAll('.cat-link').forEach(function (l) { l.classList.remove('active'); });
+    link.classList.add('active');
+
+    activeCat = link.dataset.cat;
+    sectionTitle.textContent = activeCat === 'all' ? 'All Recipes' : activeCat;
+    applyFilter();
+    closeDetail();
+  });
+
+  // ── SEARCH ──────────────────────────────────────────────
+  searchInput.addEventListener('input', function () {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    // When searching, switch to "All" so results aren't hidden by category filter
+    if (searchQuery && activeCat !== 'all') {
+      catNav.querySelectorAll('.cat-link').forEach(function (l) { l.classList.remove('active'); });
+      catNav.querySelector('[data-cat="all"]').classList.add('active');
+      activeCat = 'all';
+      sectionTitle.textContent = 'All Recipes';
+    }
+    applyFilter();
+  });
+
+  // ── CARD CLICK → DETAIL PANEL ───────────────────────────
+  grid.addEventListener('click', function (e) {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    openDetail(card.dataset.id);
+  });
+
+  function openDetail(id) {
+    var tmpl = document.getElementById('recipe-' + id);
+    if (!tmpl) return;
+    detailBody.innerHTML = tmpl.innerHTML;
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    detailBody.scrollTop = 0;
+  }
+
+  function closeDetail() {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  closeBtn.addEventListener('click', closeDetail);
+  overlay.addEventListener('click', closeDetail);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDetail();
+  });
+
+  // ── PRINT ───────────────────────────────────────────────
+  printBtn.addEventListener('click', function () { window.print(); });
+
+  // ── INIT ────────────────────────────────────────────────
+  applyFilter();
+
+}());
+</script>
+
+</body>
+</html>

@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 
 RECIPES_DIR = Path("recipes")
 TEMPLATES_DIR = Path("templates")
-OUTPUT_HTML = Path("recipe_book_web.html")
+OUTPUT_HTML = Path("docs/index.html")
 
 CATEGORY_ORDER = [
     "Breakfast",
