@@ -1,0 +1,10 @@
+beautifulsoup4
+recipe-scrapers
+pytesseract
+Pillow
+requests
+markdown
+markdownify
+weasyprint
+Jinja2
+python-dotenv

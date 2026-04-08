@@ -1,0 +1,13 @@
+.env
+raw_emails/
+extracted/
+scraped/
+recipes/
+recipe_book.pdf
+recipe_book.html
+recipe_book_web.html
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.claude/

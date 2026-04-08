@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: letter;
+    margin: 1in 0.75in;
+    @top-center {
+      content: "Recipe Book";
+      font-family: Georgia, serif;
+      font-size: 9pt;
+      color: #888;
+    }
+    @bottom-center {
+      content: counter(page);
+      font-family: Georgia, serif;
+      font-size: 9pt;
+      color: #888;
+    }
+  }
+
+  @page :first {
+    @top-center { content: none; }
+    @bottom-center { content: none; }
+  }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #222;
+  }
+
+  /* Title page */
+  .title-page {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 3in;
+  }
+  .title-page h1 {
+    font-size: 32pt;
+    margin-bottom: 0.5em;
+    border: none;
+  }
+  .title-page .subtitle {
+    font-size: 14pt;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* Table of contents */
+  .toc {
+    page-break-after: always;
+  }
+  .toc h2 {
+    font-size: 18pt;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.3em;
+  }
+  .toc ul {
+    list-style: none;
+    padding-left: 0;
+  }
+  .toc li {
+    padding: 0.15em 0;
+    border-bottom: 1px dotted #ccc;
+  }
+  .toc li a {
+    color: #333;
+    text-decoration: none;
+  }
+  .toc .category-header {
+    font-weight: bold;
+    font-size: 12pt;
+    margin-top: 1em;
+    border-bottom: none;
+    color: #555;
+  }
+
+  /* Section dividers */
+  .section-divider {
+    page-break-before: always;
+    text-align: center;
+    padding-top: 2.5in;
+    page-break-after: always;
+  }
+  .section-divider h2 {
+    font-size: 28pt;
+    color: #333;
+    border: none;
+  }
+
+  /* Recipe styling */
+  .recipe {
+    page-break-before: always;
+  }
+  .recipe h1 {
+    font-size: 20pt;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.3em;
+    margin-bottom: 0.5em;
+  }
+  .recipe .meta {
+    color: #666;
+    font-size: 10pt;
+    margin-bottom: 1em;
+  }
+  .recipe .meta strong {
+    color: #444;
+  }
+  .recipe h2 {
+    font-size: 14pt;
+    color: #555;
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.2em;
+  }
+  .recipe ul {
+    padding-left: 1.2em;
+  }
+  .recipe li {
+    margin-bottom: 0.2em;
+  }
+  .recipe ol li {
+    margin-bottom: 0.5em;
+  }
+  .recipe p {
+    margin: 0.4em 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Title Page -->
+<div class="title-page">
+  <h1>{{ title }}</h1>
+  <p class="subtitle">{{ subtitle }}</p>
+</div>
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  {% for category, cat_recipes in categories.items() %}
+  <p class="category-header">{{ category }}</p>
+  <ul>
+    {% for recipe in cat_recipes %}
+    <li><a href="#recipe-{{ recipe.id }}">{{ recipe.title }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</div>
+
+<!-- Recipes by Category -->
+{% for category, cat_recipes in categories.items() %}
+
+<div class="section-divider">
+  <h2>{{ category }}</h2>
+</div>
+
+{% for recipe in cat_recipes %}
+<div class="recipe" id="recipe-{{ recipe.id }}">
+  {{ recipe.html }}
+</div>
+{% endfor %}
+
+{% endfor %}
+
+</body>
+</html>
